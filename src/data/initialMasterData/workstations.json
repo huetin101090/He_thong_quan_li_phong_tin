@@ -1,0 +1,222 @@
+[
+  {
+    "pcId": 1,
+    "code": "PC01",
+    "name": "Máy tính trạm 01",
+    "deviceToken": "WS-DD-PC01-7C60A89C",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.101"
+  },
+  {
+    "pcId": 2,
+    "code": "PC02",
+    "name": "Máy tính trạm 02",
+    "deviceToken": "WS-DD-PC02-BCAB608B",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.102"
+  },
+  {
+    "pcId": 3,
+    "code": "PC03",
+    "name": "Máy tính trạm 03",
+    "deviceToken": "WS-DD-PC03-6C699AC4",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.103"
+  },
+  {
+    "pcId": 4,
+    "code": "PC04",
+    "name": "Máy tính trạm 04",
+    "deviceToken": "WS-DD-PC04-C8CA3C15",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.104"
+  },
+  {
+    "pcId": 5,
+    "code": "PC05",
+    "name": "Máy tính trạm 05",
+    "deviceToken": "WS-DD-PC05-CA585866",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.105"
+  },
+  {
+    "pcId": 6,
+    "code": "PC06",
+    "name": "Máy tính trạm 06",
+    "deviceToken": "WS-DD-PC06-0C96F426",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.106"
+  },
+  {
+    "pcId": 7,
+    "code": "PC07",
+    "name": "Máy tính trạm 07",
+    "deviceToken": "WS-DD-PC07-1BA5B604",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.107"
+  },
+  {
+    "pcId": 8,
+    "code": "PC08",
+    "name": "Máy tính trạm 08",
+    "deviceToken": "WS-DD-PC08-D52AA260",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.108"
+  },
+  {
+    "pcId": 9,
+    "code": "PC09",
+    "name": "Máy tính trạm 09",
+    "deviceToken": "WS-DD-PC09-91615F95",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.109"
+  },
+  {
+    "pcId": 10,
+    "code": "PC10",
+    "name": "Máy tính trạm 10",
+    "deviceToken": "WS-DD-PC10-0592B90B",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.110"
+  },
+  {
+    "pcId": 11,
+    "code": "PC11",
+    "name": "Máy tính trạm 11",
+    "deviceToken": "WS-DD-PC11-6B7B253E",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.111"
+  },
+  {
+    "pcId": 12,
+    "code": "PC12",
+    "name": "Máy tính trạm 12",
+    "deviceToken": "WS-DD-PC12-6D316327",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.112"
+  },
+  {
+    "pcId": 13,
+    "code": "PC13",
+    "name": "Máy tính trạm 13",
+    "deviceToken": "WS-DD-PC13-D5511D9D",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.113"
+  },
+  {
+    "pcId": 14,
+    "code": "PC14",
+    "name": "Máy tính trạm 14",
+    "deviceToken": "WS-DD-PC14-1FAD46E3",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.114"
+  },
+  {
+    "pcId": 15,
+    "code": "PC15",
+    "name": "Máy tính trạm 15",
+    "deviceToken": "WS-DD-PC15-00AFF28E",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.115"
+  },
+  {
+    "pcId": 16,
+    "code": "PC16",
+    "name": "Máy tính trạm 16",
+    "deviceToken": "WS-DD-PC16-540A78D7",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.116"
+  },
+  {
+    "pcId": 17,
+    "code": "PC17",
+    "name": "Máy tính trạm 17",
+    "deviceToken": "WS-DD-PC17-1C9ED444",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.117"
+  },
+  {
+    "pcId": 18,
+    "code": "PC18",
+    "name": "Máy tính trạm 18",
+    "deviceToken": "WS-DD-PC18-0EE5B2F4",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.118"
+  },
+  {
+    "pcId": 19,
+    "code": "PC19",
+    "name": "Máy tính trạm 19",
+    "deviceToken": "WS-DD-PC19-590D5817",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.119"
+  },
+  {
+    "pcId": 20,
+    "code": "PC20",
+    "name": "Máy tính trạm 20",
+    "deviceToken": "WS-DD-PC20-A279ACCB",
+    "isRegistered": true,
+    "status": "active",
+    "verifiedBy": "Cô Nguyễn Thị Huệ (GV Quản lý)",
+    "verifiedAt": "2026-10-16 08:00:00",
+    "ipAddress": "192.168.1.120"
+  }
+]

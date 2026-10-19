@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function() {
+        try {
+          var currentFetch = typeof window !== 'undefined' ? window.fetch : undefined;
+          var patch = {
+            configurable: true,
+            enumerable: true,
+            get: function() {
+              return currentFetch;
+            },
+            set: function(fn) {
+              currentFetch = fn;
+            }
+          };
+          if (typeof window !== 'undefined') {
+            try {
+              Object.defineProperty(window, 'fetch', patch);
+            } catch (e1) {}
+          }
+          if (typeof Window !== 'undefined' && Window.prototype) {
+            try {
+              Object.defineProperty(Window.prototype, 'fetch', patch);
+            } catch (e2) {}
+          }
+        } catch (e) {
+          console.warn('Fetch setter patch error:', e);
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lớp Học Số Thông Minh Smart ICT – TH Đồng Dương Cô Huệ</title>
+    <meta name="description" content="Hệ thống quản lý phòng máy tính Tin học và phân công chỗ ngồi thông minh cho Trường Tiểu học Đồng Dương (9 lớp, 249 học sinh, 20 máy)" />
+    <meta property="og:title" content="Lớp Học Số Thông Minh Smart ICT – TH Đồng Dương Cô Huệ" />
+    <meta property="og:description" content="Hệ thống quản lý phòng máy tính Tin học và phân công chỗ ngồi thông minh cho Trường Tiểu học Đồng Dương (9 lớp, 249 học sinh, 20 máy)" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

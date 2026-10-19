@@ -1,0 +1,8 @@
+{
+  "name": "Lớp Học Số Thông Minh Smart ICT – TH Đồng Dương Cô Huệ",
+  "description": "Hệ thống quản lý phòng máy tính Tin học và phân công chỗ ngồi thông minh cho Trường Tiểu học Đồng Dương (9 lớp, 249 học sinh, 20 máy)",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
