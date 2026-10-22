@@ -12,12 +12,14 @@ import {
   Globe,
   Award,
   Gamepad2,
-  CalendarCheck
+  CalendarCheck,
+  KeyRound
 } from 'lucide-react';
 
 export type ActiveViewTab = 
   | 'materials' 
   | 'students'
+  | 'accounts'
   | 'computers'
   | 'attendance'
   | 'theory' 
@@ -90,6 +92,20 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
           >
             <Users className="w-3.5 h-3.5 text-blue-300" />
             <span>HỌC SINH ({studentCount})</span>
+          </button>
+
+          {/* 2.1 TÀI KHOẢN HỌC SINH & CẤP MÃ PIN (YÊU CẦU QUẢN TRỊ) */}
+          <button
+            onClick={() => onTabChange('accounts')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'accounts'
+                ? 'bg-amber-400 text-slate-950 font-black shadow-sm ring-2 ring-amber-300'
+                : 'text-amber-300 hover:bg-white/10 hover:text-white'
+            }`}
+            title="Quản lý và cấp lại mã PIN tài khoản học sinh 9 lớp"
+          >
+            <KeyRound className="w-3.5 h-3.5" />
+            <span>TÀI KHOẢN HỌC SINH</span>
           </button>
 
           {/* 3. 20 MÁY TÍNH */}
@@ -201,55 +217,20 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
         {/* Right Area: Subject Switcher & Search */}
         <div className="shrink-0 flex flex-wrap items-center justify-end gap-2">
           
-          {onSelectSubject && (
-            <div className="inline-flex items-center p-0.5 bg-blue-950/80 rounded-xl border border-blue-400/40 text-[11px] font-bold">
-              <button
-                type="button"
-                onClick={() => onSelectSubject('all')}
-                className={`px-2 py-1 rounded-lg transition cursor-pointer ${
-                  selectedSubject === 'all'
-                    ? 'bg-white text-blue-950 shadow-xs'
-                    : 'text-blue-200 hover:text-white'
-                }`}
-                title="Xem cả 2 môn: Tin học & Công nghệ"
-              >
-                Cả 2 môn
-              </button>
-              <button
-                type="button"
-                onClick={() => onSelectSubject('tin')}
-                className={`px-2 py-1 rounded-lg transition cursor-pointer ${
-                  selectedSubject === 'tin'
-                    ? 'bg-cyan-500 text-slate-950 shadow-xs font-black'
-                    : 'text-blue-200 hover:text-cyan-200'
-                }`}
-                title="Chỉ xem Môn Tin học"
-              >
-                💻 Tin học
-              </button>
-              <button
-                type="button"
-                onClick={() => onSelectSubject('congnghe')}
-                className={`px-2 py-1 rounded-lg transition cursor-pointer ${
-                  selectedSubject === 'congnghe'
-                    ? 'bg-emerald-400 text-slate-950 shadow-xs font-black'
-                    : 'text-blue-200 hover:text-emerald-200'
-                }`}
-                title="Chỉ xem Môn Công nghệ"
-              >
-                🛠️ Công nghệ
-              </button>
-            </div>
-          )}
+          {/* Active Subject Badge (Tin học) */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-950/90 rounded-xl border border-cyan-400/50 text-[11px] font-black text-cyan-300 shadow-xs">
+            <Monitor className="w-3.5 h-3.5 text-cyan-400" />
+            <span>MÔN TIN HỌC</span>
+          </div>
 
           {onOpen18FoldersModal && (
             <button
               type="button"
               onClick={onOpen18FoldersModal}
               className="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-[11px] rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1"
-              title="Mở bảng 18 thư mục lớp học Cô Huệ"
+              title="Mở bảng 9 thư mục lớp Môn Tin học Cô Huệ"
             >
-              <span>📁 18 Thư mục</span>
+              <span>📁 9 Thư mục Tin học</span>
             </button>
           )}
 

@@ -26,7 +26,11 @@ import {
   Sparkles,
   Save,
   ChevronDown,
-  Share2
+  Share2,
+  Database,
+  RefreshCw,
+  AlertCircle,
+  ShieldCheck
 } from 'lucide-react';
 import { Student, ClassInfo, ClassAssignments, AttendanceStatus, Gender } from '../types/classroom';
 import { UserSession } from '../types/assignments';
@@ -57,6 +61,15 @@ interface StudentRosterViewProps {
   selectedSubject?: 'all' | 'tin' | 'congnghe';
   onSelectSubject?: (subject: 'all' | 'tin' | 'congnghe') => void;
   onOpen18FoldersModal?: () => void;
+  supabaseStatus?: 'loading' | 'connected' | 'error';
+  supabaseError?: string | null;
+  supabaseMetadata?: {
+    totalFromDb: number;
+    authenticCount: number;
+    excludedMockCount: number;
+    classesCount: number;
+  } | null;
+  onRetrySupabase?: () => void;
 }
 
 export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
@@ -72,6 +85,10 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
   selectedSubject = 'all',
   onSelectSubject,
   onOpen18FoldersModal,
+  supabaseStatus = 'connected',
+  supabaseError = null,
+  supabaseMetadata,
+  onRetrySupabase,
 }) => {
   // Class filter: 'all' or specific class ID like '5/4'
   const [selectedClassId, setSelectedClassId] = useState<string>(currentClassId || '5/4');
@@ -658,6 +675,109 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
         className="hidden"
       />
 
+      {/* SUPABASE CLOUD DATABASE STATUS BANNER */}
+      {supabaseStatus === 'loading' && (
+        <div className="bg-blue-50 border-2 border-blue-400 rounded-2xl p-3.5 shadow-xs flex items-center justify-between gap-3 animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+              <RefreshCw className="w-5 h-5 animate-spin text-white" />
+            </div>
+            <div>
+              <div className="text-xs font-black text-blue-950 uppercase tracking-tight flex items-center gap-2">
+                <span>Đang kết nối Cơ sở dữ liệu Supabase...</span>
+              </div>
+              <p className="text-[11px] text-blue-700 mt-0.5">
+                Đang đọc trực tiếp dữ liệu học sinh từ bảng <code className="bg-white/80 px-1 py-0.5 rounded font-mono font-bold">public.students</code> và <code className="bg-white/80 px-1 py-0.5 rounded font-mono font-bold">public.classes</code>...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {supabaseStatus === 'error' && (
+        <div className="bg-rose-50 border-2 border-rose-500 rounded-2xl p-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 mt-0.5">
+                <AlertCircle className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-black text-rose-950 uppercase tracking-tight">
+                    Lỗi kết nối Cơ sở dữ liệu Supabase
+                  </h3>
+                  <span className="px-2 py-0.5 bg-rose-200 text-rose-900 rounded-full text-[10px] font-black uppercase">
+                    Không dùng danh sách giả
+                  </span>
+                </div>
+                <p className="text-xs text-rose-800 font-semibold mt-1">
+                  {supabaseError || 'Không thể truy vấn dữ liệu từ Supabase.'}
+                </p>
+                <p className="text-[11px] text-rose-700 mt-0.5">
+                  Theo yêu cầu bảo mật: Ứng dụng <strong>không tự ý chuyển sang danh sách giả</strong> khi kết nối thất bại. Vui lòng kiểm tra kết nối mạng hoặc phân quyền Supabase.
+                </p>
+              </div>
+            </div>
+
+            {onRetrySupabase && (
+              <button
+                type="button"
+                onClick={onRetrySupabase}
+                className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-center"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Thử kết nối lại</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {supabaseStatus === 'connected' && (
+        <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border-2 border-emerald-500 rounded-2xl p-3.5 shadow-xs">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Database className="w-5 h-5 text-emerald-100" />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-600 text-white shadow-2xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-200 animate-pulse" />
+                    SUPABASE: ĐÃ KẾT NỐI (CHẾ ĐỘ CHỈ ĐỌC)
+                  </span>
+                  <span className="text-xs font-black text-emerald-950">
+                    Đang hiển thị {students.length} học sinh thật thuộc 9 lớp
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-800 mt-0.5">
+                  Nguồn dữ liệu: Bảng <code className="bg-white/80 px-1 py-0.5 rounded text-emerald-900 font-mono font-bold">public.students</code> &amp; <code className="bg-white/80 px-1 py-0.5 rounded text-emerald-900 font-mono font-bold">public.classes</code> • 
+                  Đã tự động loại trừ 12 học sinh mẫu cũ (HS4A01-HS4A12) • Không ghi đè hoặc can thiệp dữ liệu Supabase
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="text-right hidden sm:block">
+                <div className="text-xs font-bold text-slate-700">9 Lớp học:</div>
+                <div className="text-[10px] text-slate-500 font-mono">3/4, 3/5, 3/6, 4/3, 4/4, 4/5, 5/4, 5/5, 5/6</div>
+              </div>
+              {onRetrySupabase && (
+                <button
+                  type="button"
+                  onClick={onRetrySupabase}
+                  className="px-2.5 py-1.5 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold flex items-center gap-1 transition cursor-pointer shadow-2xs"
+                  title="Tải lại dữ liệu mới nhất từ Supabase"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Làm mới</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. Header Banner */}
       <div className="bg-white border-2 border-blue-600 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -1059,55 +1179,20 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
               </span>
             </div>
 
-            {/* Subject toggle */}
-            {onSelectSubject && (
-              <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-xl border border-slate-200 text-xs font-bold">
-                <button
-                  type="button"
-                  onClick={() => onSelectSubject('all')}
-                  className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                    selectedSubject === 'all'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  🌟 Cả 2 môn (18 Thư mục)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectSubject('tin')}
-                  className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                    selectedSubject === 'tin'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-blue-700'
-                  }`}
-                >
-                  <Monitor className="w-3.5 h-3.5 text-blue-400" />
-                  <span>💻 MÔN TIN HỌC</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onSelectSubject('congnghe')}
-                  className={`px-3 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                    selectedSubject === 'congnghe'
-                      ? 'bg-emerald-600 text-white shadow-xs'
-                      : 'text-slate-600 hover:text-emerald-700'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
-                  <span>🛠️ MÔN CÔNG NGHỆ</span>
-                </button>
-              </div>
-            )}
+            {/* Active Subject Badge (Tin học) */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-xs">
+              <Monitor className="w-3.5 h-3.5 text-blue-200" />
+              <span>💻 MÔN TIN HỌC (9 Lớp)</span>
+            </div>
 
             {onOpen18FoldersModal && (
               <button
                 type="button"
                 onClick={onOpen18FoldersModal}
                 className="px-3 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-xl shadow-xs transition cursor-pointer flex items-center gap-1"
-                title="Xem danh mục 18 thư mục theo danh sách của Cô Huệ"
+                title="Xem danh mục 9 thư mục Môn Tin học của Cô Huệ"
               >
-                <span>📁 Bảng 18 Thư mục Cô Huệ</span>
+                <span>📁 9 Thư mục Tin học</span>
               </button>
             )}
           </div>

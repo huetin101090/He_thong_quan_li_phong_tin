@@ -5,7 +5,7 @@ import {
   LearningMaterial 
 } from '../data/learningMaterials';
 import { MaterialCard } from './MaterialCard';
-import { Sparkles, TrendingUp, Clock, Filter, Layers } from 'lucide-react';
+import { Sparkles, TrendingUp, Clock, Filter, Layers, Monitor } from 'lucide-react';
 
 interface MaterialsSectionProps {
   searchTerm: string;
@@ -46,12 +46,9 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({
         item.grade === 'all' || 
         item.grade === selectedGrade;
 
-      const matchSubject = 
-        !selectedSubject || 
-        selectedSubject === 'all' || 
-        !item.subject || 
-        item.subject === 'both' || 
-        item.subject === selectedSubject;
+      // Filter strictly for Môn Tin học (exclude congnghe)
+      if (item.subject === 'congnghe') return false;
+      const matchSubject = !item.subject || item.subject === 'tin' || item.subject === 'both';
 
       return matchSearch && matchCat && matchGrade && matchSubject;
     });
@@ -63,65 +60,42 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({
   return (
     <div className="space-y-6">
       
-      {/* SUBJECT TOGGLE BANNER */}
-      <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-emerald-50 border-2 border-indigo-200 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+      {/* SUBJECT BANNER (MÔN TIN HỌC) */}
+      <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-100 border-2 border-blue-200 rounded-2xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-xs">
-            <Layers className="w-5 h-5" />
+          <div className="p-2 rounded-xl bg-blue-600 text-white shadow-xs">
+            <Monitor className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-xs sm:text-sm font-black text-slate-900 uppercase tracking-tight">
-                Kho Học liệu Số: Môn Tin học & Môn Công nghệ
+                Kho Học liệu Số: Môn Tin học (Phòng máy tính)
               </h3>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-300">
                 Chương trình GDPT 2018
               </span>
             </div>
             <p className="text-[11px] text-slate-600 mt-0.5">
-              Phụ trách: <strong>Cô Nguyễn Thị Huệ</strong> • Đầy đủ sách giáo khoa, bài giảng điện tử, video thực hành và phiếu bài tập
+              Phụ trách: <strong>Cô Nguyễn Thị Huệ</strong> • Đầy đủ sách giáo khoa, phần mềm luyện gõ, bài tập Scratch, video thực hành
             </p>
           </div>
         </div>
 
-        {onSelectSubject && (
-          <div className="inline-flex items-center p-1 bg-white rounded-xl border border-slate-200 shadow-xs text-xs font-bold">
-            <button
-              onClick={() => onSelectSubject('all')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                selectedSubject === 'all' ? 'bg-indigo-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              📚 Tất cả
-            </button>
-            <button
-              onClick={() => onSelectSubject('tin')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                selectedSubject === 'tin' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-blue-700'
-              }`}
-            >
-              💻 Môn Tin học
-            </button>
-            <button
-              onClick={() => onSelectSubject('congnghe')}
-              className={`px-3 py-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                selectedSubject === 'congnghe' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:text-emerald-700'
-              }`}
-            >
-              🛠️ Môn Công nghệ
-            </button>
-          </div>
-        )}
+        {/* Active Subject Badge */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 text-white shadow-xs text-xs font-bold shrink-0">
+          <Monitor className="w-4 h-4 text-cyan-200" />
+          <span>MÔN TIN HỌC (9 Lớp)</span>
+        </div>
       </div>
 
       {/* SECTION 1: HỌC LIỆU TẢI NHIỀU NHẤT */}
       <div className="space-y-3">
-        {/* Label Badge matching wireframe: HỌC LIỆU TẢI NHIỀU NHẤT */}
+        {/* Label Badge: HỌC LIỆU TẢI NHIỀU NHẤT (MÔN TIN HỌC) */}
         <div className="inline-block border-2 border-blue-600 rounded-xl px-4 py-1.5 bg-blue-50 shadow-xs">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-blue-600" />
             <h3 className="text-xs sm:text-sm font-black text-blue-900 uppercase tracking-wider">
-              HỌC LIỆU TẢI NHIỀU NHẤT {selectedSubject === 'congnghe' ? '(MÔN CÔNG NGHỆ)' : selectedSubject === 'tin' ? '(MÔN TIN HỌC)' : ''}
+              HỌC LIỆU TẢI NHIỀU NHẤT (MÔN TIN HỌC)
             </h3>
             <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-blue-600 text-white">
               {topMaterials.length} tài nguyên

@@ -71,7 +71,7 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
   classes,
   students,
   currentClassId,
-  selectedSubject = 'all',
+  selectedSubject = 'tin',
   onSelectSubject,
 }) => {
   const [quizzes, setQuizzes] = useState<TheoryQuiz[]>(() => getStoredQuizzes());
@@ -79,12 +79,12 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
 
   // Filters
   const [gradeFilter, setGradeFilter] = useState<'all' | 3 | 4 | 5>('all');
-  const [subjectFilter, setSubjectFilter] = useState<'all' | 'tin' | 'congnghe'>(selectedSubject);
+  const [subjectFilter, setSubjectFilter] = useState<'all' | 'tin' | 'congnghe'>('tin');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Sync with prop
   useEffect(() => {
-    setSubjectFilter(selectedSubject);
+    setSubjectFilter('tin');
   }, [selectedSubject]);
 
   const handleSubjectChange = (subj: 'all' | 'tin' | 'congnghe') => {
@@ -119,13 +119,13 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
 
   const isTeacher = session.role === 'teacher';
 
-  // Filtered quizzes
+  // Filtered quizzes (strictly Môn Tin học)
   const filteredQuizzes = useMemo(() => {
     return quizzes.filter(q => {
       if (gradeFilter !== 'all' && q.grade !== gradeFilter) return false;
-      if (subjectFilter !== 'all') {
-        if (q.subject && q.subject !== subjectFilter) return false;
-      }
+      // Exclude any congnghe quiz
+      if (q.subject === 'congnghe') return false;
+      if (q.subject && q.subject !== 'tin') return false;
       if (!isTeacher && session.classId) {
         return q.targetClassIds.includes(session.classId);
       }
@@ -135,7 +135,7 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
       }
       return true;
     });
-  }, [quizzes, gradeFilter, subjectFilter, isTeacher, session.classId, searchQuery]);
+  }, [quizzes, gradeFilter, isTeacher, session.classId, searchQuery]);
 
   // Handle Save Quiz (Teacher)
   const handleSaveQuiz = (newQuiz: TheoryQuiz) => {
@@ -373,26 +373,9 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap shrink-0">
-          {/* Subject filter */}
-          <div className="inline-flex rounded-lg p-0.5 bg-slate-100 border border-slate-200 text-xs font-semibold">
-            <button
-              onClick={() => handleSubjectChange('all')}
-              className={`px-2.5 py-1 rounded-md transition cursor-pointer ${subjectFilter === 'all' ? 'bg-indigo-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900'}`}
-            >
-              Cả 2 môn
-            </button>
-            <button
-              onClick={() => handleSubjectChange('tin')}
-              className={`px-2.5 py-1 rounded-md transition cursor-pointer ${subjectFilter === 'tin' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-blue-700'}`}
-            >
-              💻 Tin học
-            </button>
-            <button
-              onClick={() => handleSubjectChange('congnghe')}
-              className={`px-2.5 py-1 rounded-md transition cursor-pointer ${subjectFilter === 'congnghe' ? 'bg-emerald-600 text-white shadow-2xs' : 'text-slate-600 hover:text-emerald-700'}`}
-            >
-              🛠️ Công nghệ
-            </button>
+          {/* Active Subject Badge (Tin học) */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-2xs">
+            <span>💻 Môn Tin học</span>
           </div>
 
           {/* Grade filter */}

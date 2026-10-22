@@ -90,13 +90,13 @@ export const VerticalMenu: React.FC<VerticalMenuProps> = ({
     <aside className="bg-white border-2 border-blue-600 rounded-2xl shadow-sm p-3.5 space-y-4">
       
       {/* 1. Header Box: GVQL: Cô Nguyễn Thị Huệ */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-800 to-emerald-800 text-white rounded-xl p-2.5 text-center shadow-xs">
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-800 to-blue-900 text-white rounded-xl p-2.5 text-center shadow-xs">
         <h2 className="text-xs sm:text-sm font-black uppercase tracking-wide flex items-center justify-center gap-1.5">
           <GraduationCap className="w-4 h-4 text-amber-300 shrink-0" />
           <span>GV: Cô Nguyễn Thị Huệ</span>
         </h2>
         <p className="text-[10px] text-blue-100 font-medium mt-0.5">
-          Phụ trách Bộ môn Tin học & Bộ môn Công nghệ
+          Phụ trách Bộ môn Tin học (Phòng máy tính)
         </p>
       </div>
 
@@ -116,51 +116,18 @@ export const VerticalMenu: React.FC<VerticalMenuProps> = ({
             <button
               onClick={onOpen18FoldersModal}
               className="text-[10px] bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full border border-amber-300 transition cursor-pointer"
-              title="Xem danh mục 18 thư mục Tin & Công nghệ"
+              title="Xem danh mục 9 thư mục Môn Tin học"
             >
-              📁 18 Thư mục
+              📁 9 Thư mục Tin học
             </button>
           )}
         </div>
 
-        {/* Quick Subject Filter Inside Vertical Menu */}
-        {onSelectSubject && (
-          <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 text-[10px] font-bold">
-            <button
-              type="button"
-              onClick={() => onSelectSubject('all')}
-              className={`py-1 rounded-lg text-center transition cursor-pointer ${
-                selectedSubject === 'all'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Cả 2 môn
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectSubject('tin')}
-              className={`py-1 rounded-lg text-center transition cursor-pointer ${
-                selectedSubject === 'tin'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-blue-700'
-              }`}
-            >
-              💻 Tin học
-            </button>
-            <button
-              type="button"
-              onClick={() => onSelectSubject('congnghe')}
-              className={`py-1 rounded-lg text-center transition cursor-pointer ${
-                selectedSubject === 'congnghe'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-emerald-700'
-              }`}
-            >
-              🛠️ Công nghệ
-            </button>
-          </div>
-        )}
+        {/* Active Subject Badge (Tin học) */}
+        <div className="flex items-center justify-center gap-1.5 p-1.5 bg-blue-50 text-blue-800 rounded-xl border border-blue-200 text-[11px] font-bold">
+          <Monitor className="w-3.5 h-3.5 text-blue-600" />
+          <span>MÔN TIN HỌC (Phòng máy tính)</span>
+        </div>
 
         {isClassMenuOpen && (
           <div className="space-y-2.5 text-xs">
@@ -169,7 +136,7 @@ export const VerticalMenu: React.FC<VerticalMenuProps> = ({
             <div className="space-y-1">
               <div className="flex items-center justify-between text-[11px] font-bold text-slate-600 px-1">
                 <span>Khối 3 (85 HS)</span>
-                <span className="text-[9px] text-slate-400 font-normal">3 lớp • 6 thư mục</span>
+                <span className="text-[9px] text-slate-400 font-normal">3 lớp • 3 thư mục Tin học</span>
               </div>
               <div className="grid grid-cols-3 gap-1">
                 {CLASSES_DATA.filter(c => c.grade === 3).map((cls) => {
@@ -189,22 +156,13 @@ export const VerticalMenu: React.FC<VerticalMenuProps> = ({
                         {cls.totalStudents} HS
                       </div>
                       
-                      {/* Subject folder tags */}
-                      <div className="w-full mt-1 space-y-0.5">
-                        {(selectedSubject === 'all' || selectedSubject === 'tin') && (
-                          <div className={`text-[7.5px] truncate font-mono px-0.5 rounded ${
-                            isSelected ? 'bg-blue-700 text-blue-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
-                          }`}>
-                            {cls.tinHocFolder}
-                          </div>
-                        )}
-                        {(selectedSubject === 'all' || selectedSubject === 'congnghe') && (
-                          <div className={`text-[7.5px] truncate font-mono px-0.5 rounded ${
-                            isSelected ? 'bg-emerald-700 text-emerald-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                          }`}>
-                            {cls.congNgheFolder}
-                          </div>
-                        )}
+                      {/* Subject folder tags (Môn Tin học) */}
+                      <div className="w-full mt-1">
+                        <div className={`text-[7.5px] truncate font-mono px-0.5 rounded ${
+                          isSelected ? 'bg-blue-700 text-blue-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
+                        }`}>
+                          {cls.tinHocFolder}
+                        </div>
                       </div>
                     </button>
                   );
@@ -216,7 +174,7 @@ export const VerticalMenu: React.FC<VerticalMenuProps> = ({
             <div className="space-y-1">
               <div className="flex items-center justify-between text-[11px] font-bold text-slate-600 px-1">
                 <span>Khối 4 (76 HS)</span>
-                <span className="text-[9px] text-slate-400 font-normal">3 lớp • 6 thư mục</span>
+                <span className="text-[9px] text-slate-400 font-normal">3 lớp • 3 thư mục Tin học</span>
               </div>
               <div className="grid grid-cols-3 gap-1">
                 {CLASSES_DATA.filter(c => c.grade === 4).map((cls) => {
@@ -236,22 +194,13 @@ export const VerticalMenu: React.FC<VerticalMenuProps> = ({
                         {cls.totalStudents} HS
                       </div>
                       
-                      {/* Subject folder tags */}
-                      <div className="w-full mt-1 space-y-0.5">
-                        {(selectedSubject === 'all' || selectedSubject === 'tin') && (
-                          <div className={`text-[7.5px] truncate font-mono px-0.5 rounded ${
-                            isSelected ? 'bg-indigo-700 text-indigo-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
-                          }`}>
-                            {cls.tinHocFolder}
-                          </div>
-                        )}
-                        {(selectedSubject === 'all' || selectedSubject === 'congnghe') && (
-                          <div className={`text-[7.5px] truncate font-mono px-0.5 rounded ${
-                            isSelected ? 'bg-emerald-700 text-emerald-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                          }`}>
-                            {cls.congNgheFolder}
-                          </div>
-                        )}
+                      {/* Subject folder tags (Môn Tin học) */}
+                      <div className="w-full mt-1">
+                        <div className={`text-[7.5px] truncate font-mono px-0.5 rounded ${
+                          isSelected ? 'bg-indigo-700 text-indigo-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
+                        }`}>
+                          {cls.tinHocFolder}
+                        </div>
                       </div>
                     </button>
                   );
@@ -263,7 +212,7 @@ export const VerticalMenu: React.FC<VerticalMenuProps> = ({
             <div className="space-y-1">
               <div className="flex items-center justify-between text-[11px] font-bold text-slate-600 px-1">
                 <span>Khối 5 (88 HS)</span>
-                <span className="text-[9px] text-slate-400 font-normal">3 lớp • 6 thư mục</span>
+                <span className="text-[9px] text-slate-400 font-normal">3 lớp • 3 thư mục Tin học</span>
               </div>
               <div className="grid grid-cols-3 gap-1">
                 {CLASSES_DATA.filter(c => c.grade === 5).map((cls) => {
@@ -283,22 +232,13 @@ export const VerticalMenu: React.FC<VerticalMenuProps> = ({
                         {cls.totalStudents} HS
                       </div>
                       
-                      {/* Subject folder tags */}
-                      <div className="w-full mt-1 space-y-0.5">
-                        {(selectedSubject === 'all' || selectedSubject === 'tin') && (
-                          <div className={`text-[7.5px] truncate font-mono px-0.5 rounded ${
-                            isSelected ? 'bg-emerald-700 text-emerald-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
-                          }`}>
-                            {cls.tinHocFolder}
-                          </div>
-                        )}
-                        {(selectedSubject === 'all' || selectedSubject === 'congnghe') && (
-                          <div className={`text-[7.5px] truncate font-mono px-0.5 rounded ${
-                            isSelected ? 'bg-teal-700 text-teal-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                          }`}>
-                            {cls.congNgheFolder}
-                          </div>
-                        )}
+                      {/* Subject folder tags (Môn Tin học) */}
+                      <div className="w-full mt-1">
+                        <div className={`text-[7.5px] truncate font-mono px-0.5 rounded ${
+                          isSelected ? 'bg-emerald-700 text-emerald-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
+                        }`}>
+                          {cls.tinHocFolder}
+                        </div>
                       </div>
                     </button>
                   );

@@ -137,25 +137,33 @@ export async function studentLoginAuth(params: {
       }),
     });
 
-    const data = await res.json();
+    let data: any = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = { error: `Máy chủ phản hồi trạng thái HTTP ${res.status}: ${res.statusText || 'Lỗi không xác định'}` };
+    }
+
     if (res.ok && data.success) {
       if (data.record) {
         saveLocalAttendanceRecord(data.record);
       }
       return data;
     } else {
+      const errMsg = data.error || data.message || `Đăng nhập không thành công (Mã lỗi ${res.status}).`;
       return {
         success: false,
-        message: data.error || data.message || 'Xác thực không thành công.',
-        error: data.error || data.message || 'Xác thực không thành công.',
+        message: errMsg,
+        error: errMsg,
       };
     }
   } catch (err: any) {
     console.warn('Server auth call failed:', err);
+    const msg = err?.message ? `Lỗi kết nối máy chủ (${err.message}).` : 'Lỗi kết nối máy chủ điểm danh phòng máy. Vui lòng thử lại!';
     return {
       success: false,
-      message: 'Lỗi kết nối máy chủ điểm danh phòng máy. Vui lòng thử lại!',
-      error: 'Lỗi kết nối máy chủ.',
+      message: msg,
+      error: msg,
     };
   }
 }
@@ -219,46 +227,32 @@ export async function studentCheckIn(params: {
       }),
     });
 
-    if (res.ok) {
-      const data = await res.json();
+    let data: any = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = { error: `Máy chủ phản hồi trạng thái HTTP ${res.status}` };
+    }
+
+    if (res.ok && data.success) {
       if (data.record) {
         saveLocalAttendanceRecord(data.record);
       }
       return data;
+    } else {
+      const errMsg = data.error || data.message || `Điểm danh thất bại (Mã lỗi ${res.status}).`;
+      return {
+        success: false,
+        message: errMsg,
+      };
     }
-  } catch (e) {
-    console.warn('Server check-in failed, using local offline fallback', e);
+  } catch (e: any) {
+    console.warn('Server check-in failed:', e);
+    return {
+      success: false,
+      message: 'Lỗi kết nối máy chủ điểm danh phòng máy. Không thể lưu dữ liệu lên CSDL Supabase!',
+    };
   }
-
-  // Fallback offline logic
-  const nowStr = new Date().toLocaleString('vi-VN');
-  const recordId = `att_${studentId}_${todayStr}_${session}_P${period}`;
-  
-  const localRecord: AttendanceRecord = {
-    id: recordId,
-    studentId,
-    studentCode: studentCode || studentId,
-    studentName: studentName || 'Học sinh',
-    classId: activeClassId,
-    date: todayStr,
-    session,
-    periodNumber: period,
-    assignedPcId: null,
-    actualPcId: pcId,
-    loginTimestamp: nowStr,
-    status: 'present_pending_confirm',
-    seatChangeConfirmed: false,
-  };
-
-  saveLocalAttendanceRecord(localRecord);
-  return {
-    success: true,
-    record: localRecord,
-    isCorrectPc: true,
-    assignedPc: null,
-    actualPc: pcId,
-    message: `Đã đăng nhập tại Máy PC${pcId < 10 ? '0' + pcId : pcId}. Trạng thái: Có mặt tạm thời (Chờ GV xác nhận).`,
-  };
 }
 
 // 2. Load attendance records for class & session

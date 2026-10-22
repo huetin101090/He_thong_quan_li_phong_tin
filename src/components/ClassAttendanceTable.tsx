@@ -18,6 +18,7 @@ import {
   School
 } from 'lucide-react';
 import { AttendanceRecord, AttendanceStatus, ClassInfo, Student } from '../types/classroom';
+import { isSameClass } from '../data/initialData';
 import { 
   fetchAttendanceRecords, 
   confirmAttendanceRecords, 
@@ -100,7 +101,7 @@ export const ClassAttendanceTable: React.FC<ClassAttendanceTableProps> = ({
     const validStudentIds = new Set(classStudents.map(s => s.id));
     records.forEach(r => {
       // Only include records that belong to current class students
-      if (validStudentIds.has(r.studentId) && r.classId === currentClass.id) {
+      if (validStudentIds.has(r.studentId) && (r.classId === currentClass.id || isSameClass(r.classId, currentClass.id))) {
         map.set(r.studentId, r);
       }
     });

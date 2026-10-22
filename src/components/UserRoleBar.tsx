@@ -9,7 +9,8 @@ import {
   LogOut,
   ChevronDown,
   Info,
-  Key
+  Key,
+  KeyRound
 } from 'lucide-react';
 import { UserSession } from '../types/assignments';
 import { Student } from '../types/classroom';
@@ -20,6 +21,7 @@ interface UserRoleBarProps {
   students: Student[];
   onOpenSecurityModal: () => void;
   onOpenStudentLoginModal?: () => void;
+  onOpenStudentAccounts?: () => void;
   currentPcId?: number;
   lastCheckInStatus?: { isCorrectPc: boolean; actualPc: number; assignedPc: number | null } | null;
 }
@@ -30,6 +32,7 @@ export const UserRoleBar: React.FC<UserRoleBarProps> = ({
   students,
   onOpenSecurityModal,
   onOpenStudentLoginModal,
+  onOpenStudentAccounts,
   currentPcId = 1,
   lastCheckInStatus,
 }) => {
@@ -135,13 +138,24 @@ export const UserRoleBar: React.FC<UserRoleBarProps> = ({
 
       {/* Security & Database Status Badge */}
       <div className="flex items-center gap-2">
+        {isTeacher && onOpenStudentAccounts && (
+          <button
+            onClick={onOpenStudentAccounts}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[11px] font-bold bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 text-amber-300 border border-amber-500/40 transition cursor-pointer shadow-xs"
+            title="Quản lý và cấp lại mã PIN học sinh"
+          >
+            <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+            <span>Tài khoản & PIN học sinh</span>
+          </button>
+        )}
+
         <button
           onClick={onOpenSecurityModal}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition cursor-pointer"
           title="Thông tin phân quyền bảo mật & CSDL Firebase Firestore"
         >
           <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Bảo mật & CSDL dùng chung</span>
+          <span>Bảo mật & CSDL</span>
         </button>
       </div>
 

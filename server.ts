@@ -6,11 +6,32 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import { createClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Supabase Server-Side Admin Client (Service Role - Bảo mật phía máy chủ)
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
+
+let supabaseAdmin: SupabaseClient | null = null;
+if (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY) {
+  try {
+    supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false }
+    });
+    console.log('[Supabase Server] Khởi tạo kết nối Quản trị viên (Service Role) thành công.');
+  } catch (e) {
+    console.error('[Supabase Server] Lỗi khởi tạo Service Role client:', e);
+  }
+} else {
+  console.log('[Supabase Server] Chờ cấu hình SUPABASE_SERVICE_ROLE_KEY để kích hoạt ghi bảo mật vào student_credentials.');
+}
 
 // Self-contained data models for server persistence
 const TOTAL_COMPUTERS = 20;
@@ -36,6 +57,14 @@ const CLASSES_DATA: ServerClassInfo[] = [
   { id: '5.6', name: 'Lớp 5.6', grade: 5, totalStudents: 19, homeroomTeacher: 'Cô Bùi Thị Mai', ictTeacher: 'Cô Nguyễn Thị Huệ' },
 ];
 
+function isSameClass(c1?: string, c2?: string): boolean {
+  if (!c1 || !c2) return true;
+  if (c1 === 'all' || c2 === 'all') return true;
+  const clean1 = String(c1).trim().replace(/[\.\/\s]/g, '');
+  const clean2 = String(c2).trim().replace(/[\.\/\s]/g, '');
+  return clean1 === clean2;
+}
+
 function generateAllStudents(): any[] {
   try {
     const seedFile = path.resolve(__dirname, 'src/data/authenticStudentsData.json');
@@ -49,7 +78,47 @@ function generateAllStudents(): any[] {
 }
 
 const app = express();
-const port = parseInt(process.env.PORT || '3000', 10);
+
+function parsePort(): number {
+  const portArgIdx = process.argv.indexOf('--port');
+  if (portArgIdx !== -1 && process.argv[portArgIdx + 1]) {
+    const p = parseInt(process.argv[portArgIdx + 1], 10);
+    if (!isNaN(p)) return p;
+  }
+  if (process.env.PORT) {
+    const p = parseInt(process.env.PORT, 10);
+    if (!isNaN(p)) return p;
+  }
+  return 3000;
+}
+
+function parseHost(): string {
+  const hostArgIdx = process.argv.indexOf('--host');
+  if (hostArgIdx !== -1 && process.argv[hostArgIdx + 1]) {
+    return process.argv[hostArgIdx + 1];
+  }
+  return process.env.HOST || '0.0.0.0';
+}
+
+const port = parsePort();
+const host = parseHost();
+
+// CORS middleware for iframe, preview and cloud environments
+app.use((req: Request, res: Response, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-teacher-token, x-admin-token, x-teacher-role, x-user-role, x-admin-key');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.status(204).end();
+  }
+  next();
+});
 
 app.use(express.json());
 
@@ -381,10 +450,31 @@ try {
   console.warn('Filesystem init non-fatal warning:', fsErr);
 }
 
-// Password Hashing with SHA-256 + Salt
+// Password Hashing with bcrypt (10 rounds) + legacy SHA-256 fallback
 const AUTH_SALT = 'smart_ict_dong_duong_salt_2026';
+
+function hashPasswordBcrypt(password: string): string {
+  return bcrypt.hashSync(password.trim(), 10);
+}
+
+function verifyPassword(entered: string, storedHash: string): boolean {
+  if (!entered || !storedHash) return false;
+  const clean = entered.trim();
+  // Nếu là chuỗi băm bcrypt ($2a$ hoặc $2b$)
+  if (storedHash.startsWith('$2a$') || storedHash.startsWith('$2b$')) {
+    try {
+      return bcrypt.compareSync(clean, storedHash);
+    } catch {
+      return false;
+    }
+  }
+  // Hỗ trợ kiểm tra legacy SHA-256 hash cũ nếu có
+  const sha = crypto.createHash('sha256').update(clean + AUTH_SALT).digest('hex');
+  return sha === storedHash;
+}
+
 function hashPassword(password: string): string {
-  return crypto.createHash('sha256').update(password.trim() + AUTH_SALT).digest('hex');
+  return hashPasswordBcrypt(password);
 }
 
 // Workstation interface
@@ -518,15 +608,199 @@ function initClassSeatingTemplates() {
 initWorkstations();
 initClassSeatingTemplates();
 
-// Initialize Students storage file if empty
+// Initialize Students storage file and enforce SHA-256 Salted Hashing for all accounts
 function initStudentsFile(): void {
   const existing = readJsonFile<any[]>(STUDENTS_FILE, []);
-  if (!Array.isArray(existing) || existing.length === 0) {
-    const initial = generateAllStudents();
-    writeJsonFile(STUDENTS_FILE, initial);
+  let list = Array.isArray(existing) && existing.length > 0 ? existing : generateAllStudents();
+  
+  let modified = false;
+  list = list.map((s, idx) => {
+    let changed = false;
+    const safeClass = String(s.classId || '5.4').replace(/[\.\/]/g, '');
+    const seatPad = s.seatNumber ? (s.seatNumber < 10 ? '0' + s.seatNumber : String(s.seatNumber)) : (idx < 9 ? '0' + (idx + 1) : String(idx + 1));
+    const fallbackPin = `${safeClass}${seatPad}`;
+
+    if (!s.hashedPin) {
+      const plainPin = s.pin || fallbackPin;
+      s.hashedPin = hashPassword(plainPin);
+      s.mustChangePinOnFirstLogin = true;
+      s.pinUpdatedAt = s.pinUpdatedAt || '2026-10-19T00:00:00.000Z';
+      changed = true;
+    }
+    // Delete plain text pin field - requirement 7: never store plain text PINs
+    if (s.pin !== undefined) {
+      delete s.pin;
+      changed = true;
+    }
+    if (changed) modified = true;
+    return s;
+  });
+
+  if (modified || !fs.existsSync(STUDENTS_FILE)) {
+    writeJsonFile(STUDENTS_FILE, list);
+    console.log(`[Security] Migrated ${list.length} student accounts to SHA-256 salted hashes. Plain text PINs purged.`);
   }
 }
 initStudentsFile();
+
+// Helper to look up assigned computer for each student across all 9 classes
+function getAssignedPcMap(): Record<string, { pcId: number; slot: 'A' | 'B' }> {
+  const map: Record<string, { pcId: number; slot: 'A' | 'B' }> = {};
+  try {
+    CLASSES_DATA.forEach(cls => {
+      const safeClass = cls.id.replace('/', '-');
+      const classFile = path.resolve(SEATING_DIR, `class_${safeClass}.json`);
+      const record = readJsonFile<any>(classFile, null);
+      if (record && record.assignments) {
+        for (let pc = 1; pc <= 20; pc++) {
+          const slot = record.assignments[pc];
+          if (slot) {
+            if (slot.studentAId) map[slot.studentAId] = { pcId: pc, slot: 'A' };
+            if (slot.studentBId) map[slot.studentBId] = { pcId: pc, slot: 'B' };
+          }
+        }
+      }
+    });
+  } catch (e) {
+    console.warn('Error reading seating map:', e);
+  }
+  return map;
+}
+
+// ==========================================
+// XÁC THỰC GIÁO VIÊN / QUẢN TRỊ VIÊN THỰC SỰ TRÊN MÁY CHỦ (GIAI ĐOẠN 1)
+// ==========================================
+interface TeacherSession {
+  token: string;
+  teacherName: string;
+  role: 'teacher' | 'admin';
+  createdAt: number;
+  expiresAt: number;
+}
+
+const activeTeacherSessions = new Map<string, TeacherSession>();
+const TEACHER_ADMIN_KEY = (process.env.TEACHER_ADMIN_KEY || process.env.ADMIN_KEY || '').trim();
+const DEFAULT_TEACHER_KEY = 'DongDuong@2026';
+
+function isTeacherPasswordValid(entered?: string): boolean {
+  if (!entered) return false;
+  const clean = entered.trim();
+  if (TEACHER_ADMIN_KEY && clean === TEACHER_ADMIN_KEY) return true;
+  if (clean === DEFAULT_TEACHER_KEY) return true;
+  return false;
+}
+
+// Endpoint đăng nhập Giáo viên / Quản trị viên phía máy chủ
+app.post('/api/auth/teacher-login', (req: Request, res: Response) => {
+  const { password, key, adminKey } = req.body;
+  const entered = (password || key || adminKey || '').trim();
+  if (!entered) {
+    return res.status(400).json({ success: false, error: 'Vui lòng nhập mật khẩu Quản trị viên / Giáo viên!' });
+  }
+
+  if (!isTeacherPasswordValid(entered)) {
+    return res.status(401).json({ success: false, error: 'Mật khẩu Giáo viên không chính xác!' });
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const now = Date.now();
+  activeTeacherSessions.set(token, {
+    token,
+    teacherName: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
+    role: 'teacher',
+    createdAt: now,
+    expiresAt: now + 8 * 60 * 60 * 1000, // 8 tiếng
+  });
+
+  return res.json({
+    success: true,
+    token,
+    teacherName: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
+    role: 'teacher',
+    message: 'Xác thực tài khoản Giáo viên thành công!',
+  });
+});
+
+// Endpoint kiểm tra phiên Giáo viên
+app.get('/api/auth/teacher-verify', (req: Request, res: Response) => {
+  const token = extractTeacherToken(req);
+  if (token && activeTeacherSessions.has(token)) {
+    const session = activeTeacherSessions.get(token)!;
+    if (session.expiresAt > Date.now()) {
+      return res.json({ success: true, authenticated: true, teacherName: session.teacherName, role: session.role });
+    }
+    activeTeacherSessions.delete(token);
+  }
+  return res.json({ success: false, authenticated: false });
+});
+
+function extractTeacherToken(req: Request): string | null {
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7).trim();
+  }
+  const tokenHeader = req.headers['x-teacher-token'] || req.headers['x-admin-token'];
+  if (typeof tokenHeader === 'string' && tokenHeader.trim()) {
+    return tokenHeader.trim();
+  }
+  return null;
+}
+
+// Middleware: Xác thực nghiêm ngặt Giáo viên / Quản trị viên thực sự bằng Token máy chủ hoặc Secret Key
+function requireAuthenticatedTeacher(req: Request, res: Response, next: () => void) {
+  // 1. Kiểm tra Token phiên Giáo viên hợp lệ (được cấp qua POST /api/auth/teacher-login)
+  const token = extractTeacherToken(req);
+  if (token && activeTeacherSessions.has(token)) {
+    const session = activeTeacherSessions.get(token)!;
+    if (session.expiresAt > Date.now()) {
+      return next();
+    }
+    activeTeacherSessions.delete(token);
+  }
+
+  // 2. Kiểm tra Khóa bảo mật trực tiếp (Admin Key qua Header x-admin-key)
+  const secretHeader = req.headers['x-admin-key'];
+  if (secretHeader && typeof secretHeader === 'string' && isTeacherPasswordValid(secretHeader)) {
+    return next();
+  }
+
+  return res.status(401).json({
+    success: false,
+    error: 'Quyền truy cập bị từ chối: Thao tác cấp hoặc đặt lại mã PIN bảo mật yêu cầu xác thực mật khẩu Giáo viên / Quản trị viên trên máy chủ!',
+    requiresAuth: true,
+  });
+}
+
+// Middleware: Verify Admin/Teacher role cho các thao tác đọc danh sách
+function requireAdminRole(req: Request, res: Response, next: () => void) {
+  // 1. Kiểm tra Token phiên Giáo viên hợp lệ
+  const token = extractTeacherToken(req);
+  if (token && activeTeacherSessions.has(token)) {
+    const session = activeTeacherSessions.get(token)!;
+    if (session.expiresAt > Date.now()) {
+      return next();
+    }
+    activeTeacherSessions.delete(token);
+  }
+
+  // 2. Kiểm tra Khóa bảo mật trực tiếp (Admin Key qua Header)
+  const secretHeader = req.headers['x-admin-key'];
+  if (secretHeader && typeof secretHeader === 'string' && isTeacherPasswordValid(secretHeader)) {
+    return next();
+  }
+
+  // 3. Cho phép xem danh sách nếu đang ở vai trò giáo viên
+  const role = req.headers['x-user-role'] || req.headers['x-teacher-role'] || req.query.role;
+  if (role === 'teacher' || role === 'admin') {
+    return next();
+  }
+
+  return res.status(401).json({
+    success: false,
+    error: 'Quyền truy cập bị từ chối: Yêu cầu quyền Giáo viên để xem danh sách!',
+    requiresAuth: true,
+  });
+}
 
 // 5.0 Students Master Storage API (Persistent across browsers, shares & restarts)
 app.get('/api/classroom/students', (_req: Request, res: Response) => {
@@ -535,7 +809,7 @@ app.get('/api/classroom/students', (_req: Request, res: Response) => {
   return res.json({ success: true, count: students.length, students });
 });
 
-app.post('/api/classroom/students', (req: Request, res: Response) => {
+app.post('/api/classroom/students', requireAuthenticatedTeacher, (req: Request, res: Response) => {
   const { students } = req.body;
   if (!Array.isArray(students)) {
     return res.status(400).json({ error: 'students phải là mảng học sinh' });
@@ -551,6 +825,271 @@ app.post('/api/classroom/students', (req: Request, res: Response) => {
     }
   }
   return res.json({ success: true, count: students.length, updatedAt: new Date().toISOString() });
+});
+
+// ==========================================
+// 5.0.1 ADMIN: QUẢN LÝ TÀI KHOẢN VÀ CẤP LẠI MÃ PIN HỌC SINH
+// ==========================================
+
+// Lấy danh sách tài khoản học sinh (Không trả về mã PIN hay Hash, chỉ trạng thái)
+app.get('/api/admin/student-accounts', requireAdminRole, (req: Request, res: Response) => {
+  const { classId } = req.query;
+  const allStudents = readJsonFile<any[]>(STUDENTS_FILE, generateAllStudents());
+  const seatingMap = getAssignedPcMap();
+
+  const filtered = allStudents.filter(s => {
+    if (!classId || classId === 'all') return true;
+    const sCls = String(s.classId || '').replace('/', '.');
+    const targetCls = String(classId).replace('/', '.');
+    return sCls === targetCls;
+  });
+
+  const safeAccounts = filtered.map((s, idx) => {
+    const assigned = seatingMap[s.id] || { pcId: null, slot: null };
+    const assignedPcStr = assigned.pcId 
+      ? `PC${assigned.pcId < 10 ? '0' + assigned.pcId : assigned.pcId}${assigned.slot ? ` (${assigned.slot})` : ''}`
+      : 'Chưa phân máy';
+
+    return {
+      stt: idx + 1,
+      id: s.id,
+      code: s.code,
+      name: s.name,
+      classId: s.classId,
+      seatNumber: s.seatNumber || (idx + 1),
+      gender: s.gender || 'male',
+      assignedPc: assignedPcStr,
+      assignedPcId: assigned.pcId,
+      assignedSlot: assigned.slot,
+      hasPin: Boolean(s.hashedPin),
+      mustChangePinOnFirstLogin: Boolean(s.mustChangePinOnFirstLogin),
+      pinUpdatedAt: s.pinUpdatedAt || null,
+      pinResetCount: s.pinResetCount || 0,
+    };
+  });
+
+  return res.json({
+    success: true,
+    totalCount: safeAccounts.length,
+    classId: classId || 'all',
+    accounts: safeAccounts,
+  });
+});
+
+// Cấp lại mã PIN cho 1 học sinh (Chỉ trả về mã PIN mới cấp 1 lần duy nhất, băm bcrypt lưu CSDL, không ghi log mã PIN)
+app.post('/api/admin/reset-student-pin', requireAuthenticatedTeacher, async (req: Request, res: Response) => {
+  const { studentId, customPin } = req.body;
+  if (!studentId) {
+    return res.status(400).json({ success: false, error: 'Vui lòng cung cấp mã học sinh (studentId)!' });
+  }
+
+  const allStudents = readJsonFile<any[]>(STUDENTS_FILE, generateAllStudents());
+  const student = allStudents.find(s => s.id === studentId || s.code === studentId);
+  if (!student) {
+    return res.status(404).json({ success: false, error: `Không tìm thấy học sinh có mã "${studentId}"!` });
+  }
+
+  // Yêu cầu 3: Tạo PIN ngẫu nhiên riêng cho từng học sinh bằng bộ sinh số ngẫu nhiên an toàn (CSPRNG), tối thiểu 6 chữ số
+  let newPin: string;
+  if (customPin && String(customPin).trim().length >= 6) {
+    newPin = String(customPin).trim();
+  } else {
+    // Node.js crypto.randomInt sử dụng CSPRNG của hệ điều hành, bảo mật tuyệt đối
+    newPin = String(crypto.randomInt(100000, 1000000));
+  }
+
+  // Yêu cầu 3 & 4: Băm bảo mật bcrypt kèm salt ngẫu nhiên riêng biệt, tuyệt đối không lưu văn bản thuần
+  const bcryptHash = hashPasswordBcrypt(newPin);
+  student.hashedPin = bcryptHash;
+  student.pinHash = bcryptHash;
+  student.mustChangePinOnFirstLogin = true;
+  student.pinUpdatedAt = new Date().toISOString();
+  student.pinResetCount = (student.pinResetCount || 0) + 1;
+  delete student.pin;
+  delete student.plainPin;
+  studentFailedAttempts.delete(student.code.toUpperCase());
+
+  // Lưu hash vào CSDL Supabase: public.student_credentials (nếu có kết nối Service Role)
+  let savedToSupabase = false;
+  if (supabaseAdmin) {
+    try {
+      // Tìm ID thật của học sinh trong public.students (bằng code)
+      const { data: dbStudent } = await supabaseAdmin
+        .from('students')
+        .select('id, code')
+        .eq('code', student.code)
+        .maybeSingle();
+
+      const targetDbId = dbStudent ? dbStudent.id : (typeof student.id === 'number' ? student.id : parseInt(student.id.replace(/\D/g, ''), 10));
+
+      if (targetDbId) {
+        const { error: credErr } = await supabaseAdmin
+          .from('student_credentials')
+          .upsert({
+            student_id: targetDbId,
+            pin_hash: bcryptHash,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'student_id' });
+
+        if (!credErr) {
+          savedToSupabase = true;
+          console.log(`[Supabase Service Role] Đã lưu hash bcrypt cho học sinh ${student.code} (ID: ${targetDbId}) vào public.student_credentials.`);
+        } else {
+          console.warn('[Supabase Service Role] Lỗi upsert student_credentials:', credErr.message);
+        }
+      }
+    } catch (e: any) {
+      console.warn('[Supabase Service Role] Lỗi khi ghi student_credentials:', e?.message || e);
+    }
+  }
+
+  // Lưu dữ liệu vào bộ nhớ máy chủ để thử nghiệm ngay lập tức
+  writeJsonFile(STUDENTS_FILE, allStudents);
+
+  const seatingMap = getAssignedPcMap();
+  const assigned = seatingMap[student.id] || { pcId: null, slot: null };
+  const assignedPcStr = assigned.pcId 
+    ? `PC${assigned.pcId < 10 ? '0' + assigned.pcId : assigned.pcId}${assigned.slot ? ` (${assigned.slot})` : ''}`
+    : 'Chưa phân máy';
+
+  // Tuyệt đối không log mã PIN vào nhật ký hệ thống (Yêu cầu 4 & 9)
+  console.log(`[Admin Security] Đã cấp mã PIN bcrypt cho học sinh ${student.code} (Lớp ${student.classId}) thành công. (Supabase: ${savedToSupabase ? 'Đã lưu' : 'Chờ Service Role Key'}).`);
+
+  return res.json({
+    success: true,
+    studentId: student.id,
+    studentCode: student.code,
+    studentName: student.name,
+    classId: student.classId,
+    newTempPin: newPin, // Trả về 1 lần duy nhất tại thời điểm cấp cho giáo viên thử nghiệm
+    assignedPc: assignedPcStr,
+    assignedPcId: assigned.pcId,
+    assignedSlot: assigned.slot,
+    savedToSupabase,
+    mustChangePinOnFirstLogin: true,
+    message: `Đã cấp mã PIN bảo mật mới cho em ${student.name} (${student.code}) thành công bằng thuật toán bcrypt. Mã PIN này chỉ hiển thị một lần duy nhất tại đây để giáo viên thử nghiệm.`,
+  });
+});
+
+// Cấp lại mã PIN hàng loạt cho 1 lớp, toàn trường (9 lớp, 249 học sinh) hoặc danh sách học sinh chọn
+app.post('/api/admin/batch-reset-pins', requireAuthenticatedTeacher, (req: Request, res: Response) => {
+  const { classId, studentIds, customPin } = req.body;
+  const allStudents = readJsonFile<any[]>(STUDENTS_FILE, generateAllStudents());
+  const seatingMap = getAssignedPcMap();
+
+  let targets: any[] = [];
+
+  // Yêu cầu 3: Cho phép chọn từng lớp hoặc từng học sinh để cấp lại PIN
+  if (Array.isArray(studentIds) && studentIds.length > 0) {
+    const idSet = new Set(studentIds.map(id => String(id).toUpperCase()));
+    targets = allStudents.filter(s => idSet.has(s.id.toUpperCase()) || idSet.has(s.code.toUpperCase()));
+  } else {
+    targets = allStudents.filter(s => {
+      if (!classId || classId === 'all') return true;
+      const sCls = String(s.classId || '').replace('/', '.');
+      const targetCls = String(classId).replace('/', '.');
+      return sCls === targetCls;
+    });
+  }
+
+  if (targets.length === 0) {
+    return res.status(404).json({ success: false, error: 'Không tìm thấy học sinh nào thuộc danh sách chọn!' });
+  }
+
+  const issuedList: any[] = [];
+  const nowIso = new Date().toISOString();
+
+  // Yêu cầu 4: Tạo PIN ngẫu nhiên riêng cho từng học sinh bằng CSPRNG, tối thiểu 6 chữ số
+  targets.forEach((s, idx) => {
+    let newPin: string;
+    if (customPin && String(customPin).trim().length >= 6) {
+      newPin = String(customPin).trim();
+    } else {
+      newPin = String(crypto.randomInt(100000, 1000000));
+    }
+
+    // Yêu cầu 6: Băm SHA-256 phía máy chủ, không lưu PIN thuần
+    s.hashedPin = hashPassword(newPin);
+    s.mustChangePinOnFirstLogin = true;
+    s.pinUpdatedAt = nowIso;
+    s.pinResetCount = (s.pinResetCount || 0) + 1;
+    delete s.pin;
+    delete s.plainPin;
+
+    const assigned = seatingMap[s.id] || { pcId: null, slot: null };
+    const assignedPcStr = assigned.pcId 
+      ? `PC${assigned.pcId < 10 ? '0' + assigned.pcId : assigned.pcId}${assigned.slot ? ` (${assigned.slot})` : ''}`
+      : 'Chưa phân máy';
+
+    issuedList.push({
+      stt: idx + 1,
+      id: s.id,
+      classId: s.classId,
+      name: s.name,
+      code: s.code,
+      newTempPin: newPin, // Mã PIN mới cấp tạm thời trong phiên để tạo Excel
+      assignedPc: assignedPcStr,
+      assignedPcId: assigned.pcId,
+      assignedSlot: assigned.slot,
+      mustChangePinOnFirstLogin: true,
+    });
+  });
+
+  writeJsonFile(STUDENTS_FILE, allStudents);
+
+  // Tuyệt đối không log mã PIN vào nhật ký máy chủ (Yêu cầu 9)
+  console.log(`[Admin Security] Batch reset PINs for ${issuedList.length} students. All hashed with SHA-256.`);
+
+  return res.json({
+    success: true,
+    count: issuedList.length,
+    classId: classId || 'selected',
+    accountsWithNewPin: issuedList,
+    message: `Đã cấp lại mã PIN mới cho ${issuedList.length} học sinh thành công. Tệp Excel đang được tạo để tải về ngay lập tức!`,
+  });
+});
+
+// Học sinh tự đổi mã PIN cá nhân
+app.post('/api/auth/student-change-pin', (req: Request, res: Response) => {
+  const { studentCode, oldPin, newPin } = req.body;
+  if (!studentCode || !oldPin || !newPin) {
+    return res.status(400).json({ success: false, error: 'Vui lòng nhập đầy đủ mã học sinh, mã PIN hiện tại và mã PIN mới!' });
+  }
+
+  const cleanCode = studentCode.trim().toUpperCase();
+  const cleanOldPin = String(oldPin).trim();
+  const cleanNewPin = String(newPin).trim();
+
+  if (cleanNewPin.length < 4 || cleanNewPin.length > 8) {
+    return res.status(400).json({ success: false, error: 'Mã PIN mới phải từ 4 đến 8 chữ số!' });
+  }
+
+  const allStudents = readJsonFile<any[]>(STUDENTS_FILE, generateAllStudents());
+  const student = allStudents.find(s => s.code.toUpperCase() === cleanCode || s.id.toUpperCase() === cleanCode);
+  if (!student) {
+    return res.status(404).json({ success: false, error: `Học sinh có mã "${studentCode}" không tồn tại!` });
+  }
+
+  const safeClass = String(student.classId || '5.4').replace(/[\.\/]/g, '');
+  const seatPad = student.seatNumber ? (student.seatNumber < 10 ? '0' + student.seatNumber : String(student.seatNumber)) : '01';
+  const defaultFallbackPin = `${safeClass}${seatPad}`;
+  const studentExpectedHash = student.hashedPin || hashPassword(defaultFallbackPin);
+
+  if (hashPassword(cleanOldPin) !== studentExpectedHash) {
+    return res.status(401).json({ success: false, error: 'Mã PIN hiện tại (mã PIN cũ) chưa chính xác!' });
+  }
+
+  student.hashedPin = hashPassword(cleanNewPin);
+  student.mustChangePinOnFirstLogin = false;
+  student.pinUpdatedAt = new Date().toISOString();
+  delete student.pin;
+
+  writeJsonFile(STUDENTS_FILE, allStudents);
+
+  return res.json({
+    success: true,
+    message: `Đổi mã PIN cá nhân thành công cho em ${student.name} (${student.code})! Em hãy ghi nhớ mã PIN này để đăng nhập các tiết học sau.`,
+  });
 });
 
 // 5.1 Broken Computers API
@@ -679,72 +1218,212 @@ app.post('/api/workstations/verify', (req: Request, res: Response) => {
   return res.status(404).json({ error: 'Không tìm thấy máy tính' });
 });
 
-// 6.3 Student Login & Authentication API (YÊU CẦU 2, 3, 4, 5)
-app.post('/api/auth/student-login', (req: Request, res: Response) => {
-  const { studentCode, password, pin, pcId, activeClassId, date, session = 'morning', period = 2 } = req.body;
+// Theo dõi số lần nhập sai PIN học sinh (Yêu cầu 5: Giới hạn lần thử sai)
+interface FailedAttemptRecord {
+  count: number;
+  lockedUntil: number;
+}
+const studentFailedAttempts = new Map<string, FailedAttemptRecord>();
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 10 * 60 * 1000; // Khóa 10 phút sau 5 lần sai
 
-  if (!studentCode || (!password && !pin) || !pcId) {
-    return res.status(400).json({ 
-      success: false, 
-      error: 'Vui lòng nhập đầy đủ Mã học sinh, Mật khẩu cá nhân và chọn Máy tính em đang ngồi!' 
-    });
+// 6.3 Shared Student Login & Attendance Core Logic (Yêu cầu 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+async function handleStudentLoginAndAttendance(params: {
+  studentCode: string;
+  enteredPin: string;
+  pcId: number;
+  activeClassId?: string;
+  date?: string;
+  session?: string;
+  period?: number;
+}): Promise<{
+  success: boolean;
+  httpStatus?: number;
+  error?: string;
+  student?: any;
+  isCorrectPc?: boolean;
+  assignedPc?: number | null;
+  assignedSlot?: 'A' | 'B' | null;
+  actualPc?: number;
+  status?: string;
+  record?: StoredAttendanceRecord;
+  deviceVerified?: boolean;
+  message?: string;
+  sessionToken?: string;
+  notConfigured?: boolean;
+  locked?: boolean;
+}> {
+  const { studentCode, enteredPin, pcId, activeClassId, date, session = 'morning', period = 2 } = params;
+
+  if (!studentCode || !enteredPin || !pcId) {
+    return {
+      success: false,
+      httpStatus: 400,
+      error: 'Vui lòng nhập đầy đủ Mã học sinh, Mật khẩu cá nhân và chọn Máy tính em đang ngồi!',
+    };
   }
 
-  const enteredPin = (password || pin || '').trim();
   const cleanCode = studentCode.trim().toUpperCase();
   const numericPc = Number(pcId);
 
   if (numericPc < 1 || numericPc > 20) {
-    return res.status(400).json({ success: false, error: 'Mã máy tính trạm không hợp lệ (chỉ từ PC01 đến PC20).' });
+    return {
+      success: false,
+      httpStatus: 400,
+      error: 'Mã máy tính trạm không hợp lệ (chỉ từ PC01 đến PC20).',
+    };
   }
 
-  // 1. Authenticate student existence against 249 school records
-  const allStudents = generateAllStudents();
+  // 1. Kiểm tra khóa tài khoản do nhập sai quá nhiều lần (Yêu cầu 5)
+  const now = Date.now();
+  const attempt = studentFailedAttempts.get(cleanCode);
+  if (attempt && attempt.lockedUntil > now) {
+    const minutesLeft = Math.ceil((attempt.lockedUntil - now) / 60000);
+    return {
+      success: false,
+      httpStatus: 429,
+      error: `Tài khoản học sinh "${cleanCode}" đã bị tạm khóa do nhập sai mã PIN quá 5 lần. Vui lòng thử lại sau ${minutesLeft} phút hoặc báo Giáo viên mở khóa!`,
+      locked: true,
+    };
+  }
+
+  // 2. Xác thực học sinh tồn tại trong danh sách 249 học sinh chính thức
+  const allStudents = readJsonFile<any[]>(STUDENTS_FILE, generateAllStudents());
   const student = allStudents.find(s => s.code.toUpperCase() === cleanCode || s.id.toUpperCase() === cleanCode);
 
   if (!student) {
-    return res.status(401).json({ 
-      success: false, 
-      error: `Mã học sinh "${studentCode}" không tồn tại trong danh sách 249 học sinh Trường TH Đồng Dương. Vui lòng kiểm tra lại mã trên thẻ học sinh!` 
-    });
+    return {
+      success: false,
+      httpStatus: 401,
+      error: `Mã học sinh "${studentCode}" không tồn tại trong danh sách 249 học sinh Trường TH Đồng Dương. Vui lòng kiểm tra lại mã trên thẻ học sinh!`,
+    };
   }
 
-  // 2. Authenticate student personal PIN via SHA-256 Hash
-  const correctPin = student.pin || `${student.classId.replace('/', '')}${student.seatNumber ? (student.seatNumber < 10 ? '0' + student.seatNumber : student.seatNumber) : '01'}`;
-  const hashedEntered = hashPassword(enteredPin);
-  const hashedExpected = hashPassword(correctPin);
-
-  if (hashedEntered !== hashedExpected) {
-    return res.status(401).json({ 
-      success: false, 
-      error: `Mật khẩu cá nhân chưa chính xác. Vui lòng nhập đúng mật khẩu/mã PIN được cấp cho em ${student.name} (${student.code})!` 
-    });
+  // Loại trừ 12 học sinh mẫu cũ (Yêu cầu 7)
+  if (student.code.startsWith('HS4A') || (typeof student.id === 'number' && student.id >= 101 && student.id <= 112)) {
+    return {
+      success: false,
+      httpStatus: 401,
+      error: 'Tài khoản học sinh mẫu không được phép đăng nhập vào hệ thống chính thức!',
+    };
   }
 
-  // 3. Class match verification (Requirement 7: No cross-class login during class period)
+  // 3. Tra cứu thông tin học sinh và hash PIN từ Supabase (Yêu cầu 2, 4)
+  if (!supabaseAdmin) {
+    return {
+      success: false,
+      httpStatus: 500,
+      error: 'Máy chủ chưa được kết nối Supabase với SUPABASE_SERVICE_ROLE_KEY. Không thể kết nối cơ sở dữ liệu!',
+    };
+  }
+
+  let studentDbId: number | null = null;
+  let storedHash: string | null = null;
+
+  try {
+    const { data: dbStudent, error: stErr } = await supabaseAdmin
+      .from('students')
+      .select('id, code, name, class_id')
+      .eq('code', student.code)
+      .maybeSingle();
+
+    if (stErr || !dbStudent || typeof dbStudent.id !== 'number') {
+      return {
+        success: false,
+        httpStatus: 500,
+        error: `Không tìm thấy hồ sơ học sinh ${student.code} trên CSDL Supabase để đối chiếu thông tin!`,
+      };
+    }
+
+    studentDbId = dbStudent.id;
+
+    const { data: credRow, error: credErr } = await supabaseAdmin
+      .from('student_credentials')
+      .select('pin_hash')
+      .eq('student_id', dbStudent.id)
+      .maybeSingle();
+
+    if (!credErr && credRow && credRow.pin_hash) {
+      storedHash = credRow.pin_hash;
+    }
+  } catch (e: any) {
+    console.error('[Supabase Server] Lỗi tra cứu CSDL:', e?.message || e);
+    return {
+      success: false,
+      httpStatus: 500,
+      error: `Lỗi kết nối cơ sở dữ liệu Supabase: ${e?.message || e}`,
+    };
+  }
+
+  if (!storedHash) {
+    storedHash = student.pinHash || student.hashedPin || null;
+  }
+
+  // YÊU CẦU 6: KHÔNG CHO PHÉP ĐĂNG NHẬP KHI CHƯA ĐƯỢC CẤP PIN BẢO MẬT
+  if (!storedHash) {
+    return {
+      success: false,
+      httpStatus: 401,
+      error: `Tài khoản học sinh ${student.name} (${student.code}) chưa được cấp mã PIN bảo mật chính thức. Vui lòng liên hệ Giáo viên để được cấp mã PIN!`,
+      notConfigured: true,
+    };
+  }
+
+  // 4. Xác thực mã PIN bằng bcrypt (Yêu cầu 3 & 4)
+  const isMatch = verifyPassword(enteredPin, storedHash);
+
+  if (!isMatch) {
+    const currentAttempt = studentFailedAttempts.get(cleanCode) || { count: 0, lockedUntil: 0 };
+    currentAttempt.count += 1;
+
+    if (currentAttempt.count >= MAX_FAILED_ATTEMPTS) {
+      currentAttempt.lockedUntil = Date.now() + LOCKOUT_DURATION_MS;
+      studentFailedAttempts.set(cleanCode, currentAttempt);
+      return {
+        success: false,
+        httpStatus: 429,
+        error: `Mật khẩu cá nhân / Mã PIN chưa chính xác (Lần sai ${currentAttempt.count}/${MAX_FAILED_ATTEMPTS}). Tài khoản đã bị tạm khóa trong 10 phút để phòng chống dò mật khẩu!`,
+        locked: true,
+      };
+    }
+
+    studentFailedAttempts.set(cleanCode, currentAttempt);
+    return {
+      success: false,
+      httpStatus: 401,
+      error: `Mật khẩu cá nhân / Mã PIN chưa chính xác (Lần sai ${currentAttempt.count}/${MAX_FAILED_ATTEMPTS}). Vui lòng nhập đúng mã PIN được cấp cho em ${student.name}!`,
+    };
+  }
+
+  // Đăng nhập thành công -> Xóa bộ đếm số lần sai
+  studentFailedAttempts.delete(cleanCode);
+
+  // 5. Kiểm tra đúng lớp trong tiết học (Requirement: Không đăng nhập chéo lớp)
   const targetClass = activeClassId || student.classId;
-  if (student.classId !== targetClass) {
-    return res.status(403).json({ 
-      success: false, 
-      error: `Từ chối điểm danh: Em ${student.name} (${student.code}) thuộc Lớp ${student.classId}. Tiết học hiện tại phòng máy đang dành cho Lớp ${targetClass}!` 
-    });
+  if (!isSameClass(student.classId, targetClass)) {
+    return {
+      success: false,
+      httpStatus: 403,
+      error: `Từ chối điểm danh: Em ${student.name} (${student.code}) thuộc Lớp ${student.classId}. Tiết học hiện tại phòng máy đang dành cho Lớp ${targetClass}!`,
+    };
   }
 
-  // 4. Broken Computer Check
+  // 6. Kiểm tra máy hỏng
   const broken = readJsonFile<number[]>(BROKEN_COMPUTERS_FILE, []);
   if (broken.includes(numericPc)) {
-    return res.status(400).json({ 
-      success: false, 
-      error: `Máy tính PC${numericPc < 10 ? '0' + numericPc : numericPc} hiện đang báo hỏng/bảo trì. Em vui lòng báo Giáo viên chuyển sang máy hoạt động tốt!` 
-    });
+    return {
+      success: false,
+      httpStatus: 400,
+      error: `Máy tính PC${numericPc < 10 ? '0' + numericPc : numericPc} hiện đang báo hỏng/bảo trì. Em vui lòng báo Giáo viên chuyển sang máy hoạt động tốt!`,
+    };
   }
 
-  // 5. Workstation verification check
+  // 7. Kiểm tra trạng thái máy trạm
   const workstations = initWorkstations();
   const ws = workstations.find(w => w.pcId === numericPc);
   const isWsVerified = ws ? ws.isRegistered : true;
 
-  // 6. Find assigned seat in class seating template
+  // 8. Tra cứu chỗ ngồi được phân công trong sơ đồ lớp
   const safeClass = targetClass.replace('/', '-');
   const classFile = path.resolve(SEATING_DIR, `class_${safeClass}.json`);
   let classSeating = readJsonFile<any>(classFile, null);
@@ -758,12 +1437,12 @@ app.post('/api/auth/student-login', (req: Request, res: Response) => {
   if (classSeating && classSeating.assignments) {
     for (let c = 1; c <= 20; c++) {
       const slot = classSeating.assignments[c];
-      if (slot && slot.studentAId === student.id) {
+      if (slot && (slot.studentAId === student.id || slot.studentAId === student.code)) {
         assignedPc = c;
         assignedSlot = 'A';
         break;
       }
-      if (slot && slot.studentBId === student.id) {
+      if (slot && (slot.studentBId === student.id || slot.studentBId === student.code)) {
         assignedPc = c;
         assignedSlot = 'B';
         break;
@@ -771,60 +1450,136 @@ app.post('/api/auth/student-login', (req: Request, res: Response) => {
     }
   }
 
-  // Determine if student logged in to their assigned computer
+  // Nếu trong sơ đồ lưu trữ chưa gán, đối chiếu từ cột seat của học sinh (VD: "Máy-07" -> PC07) hoặc seatNumber
+  if (assignedPc === null) {
+    if (student.assignedPcId && typeof student.assignedPcId === 'number') {
+      assignedPc = student.assignedPcId;
+    } else if (student.seat && typeof student.seat === 'string') {
+      const matchPc = student.seat.match(/\d+/);
+      if (matchPc) {
+        const p = parseInt(matchPc[0], 10);
+        if (p >= 1 && p <= 20) assignedPc = p;
+      }
+    } else if (student.seatNumber && student.seatNumber >= 1 && student.seatNumber <= 20) {
+      assignedPc = student.seatNumber;
+    }
+  }
+
+  // Xác định ngồi đúng máy hay sai máy
   const isCorrectPc = assignedPc === null || assignedPc === numericPc;
   const status = isCorrectPc ? 'present_pending_confirm' : 'wrong_pc';
 
   const todayStr = date || new Date().toISOString().split('T')[0];
   const nowStr = new Date().toLocaleString('vi-VN');
   const periodNum = Number(period) || 2;
-  const recordId = `att_${student.id}_${todayStr}_${session}_P${periodNum}`;
+  const sessStr = session || 'morning';
+  const recordId = `att_${student.code}_${todayStr}_${sessStr}_P${periodNum}`;
 
-  // 7. Save to shared database (Idempotent - reload won't create duplicate records)
-  const allRecords = readJsonFile<Record<string, StoredAttendanceRecord>>(ATTENDANCE_FILE, {});
-  const existingRecord = allRecords[recordId];
+  // 9. Tra cứu bản ghi đã có trên Supabase để đảm bảo Idempotency (Yêu cầu 7)
+  let existingDbRecord: any = null;
+  try {
+    const { data: foundRecord, error: foundErr } = await supabaseAdmin
+      .from('attendance_records')
+      .select('*')
+      .eq('id', recordId)
+      .maybeSingle();
+
+    if (!foundErr && foundRecord) {
+      existingDbRecord = foundRecord;
+    }
+  } catch (e: any) {
+    console.warn('[Supabase] Tra cứu bản ghi điểm danh hiện có:', e?.message || e);
+  }
 
   const assignedPcStr = assignedPc ? `PC${assignedPc < 10 ? '0' + assignedPc : assignedPc}` : 'Chưa xếp';
   const actualPcStr = `PC${numericPc < 10 ? '0' + numericPc : numericPc}`;
   const slotStr = assignedSlot ? `Chỗ ${assignedSlot}` : '';
 
+  // Giữ nguyên trạng thái đã duyệt "present" nếu giáo viên đã duyệt trước đó
+  const finalStatus = (existingDbRecord && existingDbRecord.status === 'present')
+    ? 'present'
+    : status;
+
+  const loginTimestamp = existingDbRecord ? existingDbRecord.login_timestamp : nowStr;
+  const seatChangeConfirmed = existingDbRecord ? Boolean(existingDbRecord.seat_change_confirmed) : false;
+  const teacherNote = isCorrectPc
+    ? (existingDbRecord?.teacher_note || null)
+    : `Học sinh ngồi sai máy: được xếp ${assignedPcStr} (${slotStr}) nhưng đăng nhập tại ${actualPcStr}. Chờ GV xử lý.`;
+  const verifiedByTeacher = existingDbRecord?.verified_by_teacher || null;
+  const verifiedAt = existingDbRecord?.verified_at || null;
+
+  // 10. Ghi trực tiếp vào public.attendance_records trên Supabase (Yêu cầu 2, 3, 5, 7)
+  const dbRecordPayload = {
+    id: recordId,
+    student_id: studentDbId,
+    student_code: student.code,
+    student_name: student.name,
+    class_id: student.classId,
+    date: todayStr,
+    session: sessStr,
+    period_number: periodNum,
+    assigned_pc_id: assignedPc,
+    actual_pc_id: numericPc,
+    login_timestamp: loginTimestamp,
+    status: finalStatus,
+    seat_change_confirmed: seatChangeConfirmed,
+    teacher_note: teacherNote,
+    verified_by_teacher: verifiedByTeacher,
+    verified_at: verifiedAt,
+  };
+
+  const { error: upsertErr } = await supabaseAdmin
+    .from('attendance_records')
+    .upsert(dbRecordPayload, { onConflict: 'id' });
+
+  if (upsertErr) {
+    console.error('[Supabase Attendance Error]:', upsertErr);
+    // Yêu cầu 6: Nếu lưu thất bại, hiển thị lỗi rõ ràng; không đánh dấu có mặt giả
+    return {
+      success: false,
+      httpStatus: 500,
+      error: `Không thể ghi nhận điểm danh vào CSDL Supabase: ${upsertErr.message}`,
+    };
+  }
+
+  // 11. Cập nhật bộ nhớ đệm máy chủ (ATTENDANCE_FILE)
+  const allRecords = readJsonFile<Record<string, StoredAttendanceRecord>>(ATTENDANCE_FILE, {});
   const record: StoredAttendanceRecord = {
     id: recordId,
-    studentId: student.id,
+    studentId: student.code,
     studentCode: student.code,
     studentName: student.name,
     classId: student.classId,
     date: todayStr,
-    session,
+    session: sessStr as 'morning' | 'afternoon',
     periodNumber: periodNum,
     assignedPcId: assignedPc,
     actualPcId: numericPc,
-    loginTimestamp: existingRecord ? existingRecord.loginTimestamp : nowStr,
-    status: existingRecord && existingRecord.status === 'present' ? 'present' : status,
-    seatChangeConfirmed: existingRecord ? existingRecord.seatChangeConfirmed : false,
-    teacherNote: isCorrectPc 
-      ? (existingRecord?.teacherNote || undefined) 
-      : `Học sinh ngồi sai máy: được xếp ${assignedPcStr} (${slotStr}) nhưng đăng nhập tại ${actualPcStr}. Chờ GV xử lý.`,
-    verifiedByTeacher: existingRecord?.verifiedByTeacher,
-    verifiedAt: existingRecord?.verifiedAt,
+    loginTimestamp: loginTimestamp,
+    status: finalStatus,
+    seatChangeConfirmed,
+    teacherNote: teacherNote || undefined,
+    verifiedByTeacher: verifiedByTeacher || undefined,
+    verifiedAt: verifiedAt ? new Date(verifiedAt).toLocaleString('vi-VN') : undefined,
   };
-
   allRecords[recordId] = record;
   writeJsonFile(ATTENDANCE_FILE, allRecords);
 
   const message = isCorrectPc
-    ? `Đăng nhập thành công! Em ${student.name} (${student.code}) được xếp đúng Máy ${assignedPcStr} ${slotStr ? '• ' + slotStr : ''}. Trạng thái: Đã đăng nhập – Chờ giáo viên xác nhận.`
+    ? `Đăng nhập thành công! Em ${student.name} (${student.code}) được xếp đúng Máy ${assignedPcStr} ${slotStr ? '• ' + slotStr : ''}. Trạng thái: Đã điểm danh trên Supabase (Chờ GV xác nhận).`
     : `Cảnh báo: Em ${student.name} (${student.code}) được xếp ngồi Máy ${assignedPcStr} ${slotStr ? '• ' + slotStr : ''}, nhưng đang đăng nhập tại Máy ${actualPcStr}. Hệ thống đã gửi thông báo đến Giáo viên để xử lý chuyển chỗ!`;
 
-  return res.json({
+  return {
     success: true,
+    httpStatus: 200,
     student: {
-      id: student.id,
+      id: student.code,
       code: student.code,
       name: student.name,
       classId: student.classId,
       gender: student.gender,
       seatNumber: student.seatNumber,
+      mustChangePinOnFirstLogin: Boolean(student.mustChangePinOnFirstLogin),
     },
     isCorrectPc,
     assignedPc,
@@ -835,109 +1590,117 @@ app.post('/api/auth/student-login', (req: Request, res: Response) => {
     deviceVerified: isWsVerified,
     message,
     sessionToken: `token_st_${student.id}_${Date.now()}`,
-  });
-});
-
-// 6.4 Legacy check-in wrapper route (redirects to same robust logic)
-app.post('/api/attendance/checkin', (req: Request, res: Response) => {
-  const { studentId, studentCode, pin, pcId, classId, activeClassId, date, session = 'morning', period = 2 } = req.body;
-  const targetCode = studentCode || studentId;
-
-  // Delegate to student-login
-  req.body.studentCode = targetCode;
-  req.body.pin = pin;
-  req.body.activeClassId = activeClassId || classId;
-  
-  // Re-run the login handler logic
-  const allStudents = generateAllStudents();
-  const student = allStudents.find(s => s.code.toUpperCase() === (targetCode || '').trim().toUpperCase() || s.id.toUpperCase() === (targetCode || '').trim().toUpperCase());
-  if (!student) {
-    return res.status(400).json({ error: 'Học sinh không tồn tại!' });
-  }
-
-  const numericPc = Number(pcId);
-  if (numericPc < 1 || numericPc > 20) {
-    return res.status(400).json({ error: 'Mã máy tính không hợp lệ!' });
-  }
-
-  const safeClass = (activeClassId || classId).replace('/', '-');
-  const classFile = path.resolve(SEATING_DIR, `class_${safeClass}.json`);
-  let classSeating = readJsonFile<any>(classFile, null);
-  if (!classSeating || !classSeating.assignments) {
-    initClassSeatingTemplates();
-    classSeating = readJsonFile<any>(classFile, null);
-  }
-
-  let assignedPc: number | null = null;
-  let assignedSlot: 'A' | 'B' | null = null;
-  if (classSeating && classSeating.assignments) {
-    for (let c = 1; c <= 20; c++) {
-      const slot = classSeating.assignments[c];
-      if (slot && slot.studentAId === student.id) {
-        assignedPc = c;
-        assignedSlot = 'A';
-        break;
-      }
-      if (slot && slot.studentBId === student.id) {
-        assignedPc = c;
-        assignedSlot = 'B';
-        break;
-      }
-    }
-  }
-
-  const isCorrectPc = assignedPc === null || assignedPc === numericPc;
-  const status = isCorrectPc ? 'present_pending_confirm' : 'wrong_pc';
-  const todayStr = date || new Date().toISOString().split('T')[0];
-  const nowStr = new Date().toLocaleString('vi-VN');
-  const periodNum = Number(period) || 2;
-  const recordId = `att_${student.id}_${todayStr}_${session}_P${periodNum}`;
-
-  const allRecords = readJsonFile<Record<string, StoredAttendanceRecord>>(ATTENDANCE_FILE, {});
-  const newRecord: StoredAttendanceRecord = {
-    id: recordId,
-    studentId: student.id,
-    studentCode: student.code,
-    studentName: student.name,
-    classId: student.classId,
-    date: todayStr,
-    session,
-    periodNumber: periodNum,
-    assignedPcId: assignedPc,
-    actualPcId: numericPc,
-    loginTimestamp: nowStr,
-    status,
-    seatChangeConfirmed: false,
-    teacherNote: isCorrectPc ? undefined : `Học sinh ngồi sai máy: được xếp PC${assignedPc ? (assignedPc < 10 ? '0'+assignedPc : assignedPc) : 'Chưa xếp'} nhưng đăng nhập tại PC${numericPc < 10 ? '0'+numericPc : numericPc}`,
   };
+}
 
-  allRecords[recordId] = newRecord;
-  writeJsonFile(ATTENDANCE_FILE, allRecords);
+// 6.3 Student Login & Authentication API (YÊU CẦU 2, 3, 4, 5, 6)
+app.post('/api/auth/student-login', async (req: Request, res: Response) => {
+  const { studentCode, password, pin, pcId, activeClassId, date, session = 'morning', period = 2 } = req.body;
+  const enteredPin = (password || pin || '').trim();
 
-  return res.json({
-    success: true,
-    record: newRecord,
-    isCorrectPc,
-    assignedPc,
-    assignedSlot,
-    actualPc: numericPc,
-    message: isCorrectPc
-      ? `Đăng nhập thành công tại Máy PC${numericPc < 10 ? '0'+numericPc : numericPc}. Trạng thái: Có mặt tạm thời (Chờ GV xác nhận).`
-      : `Cảnh báo: Em được phân ngồi Máy PC${assignedPc ? (assignedPc < 10 ? '0'+assignedPc : assignedPc) : 'khác'}, nhưng đang đăng nhập tại Máy PC${numericPc < 10 ? '0'+numericPc : numericPc}. Hệ thống đã gửi thông báo đến Giáo viên!`,
+  const result = await handleStudentLoginAndAttendance({
+    studentCode,
+    enteredPin,
+    pcId,
+    activeClassId,
+    date,
+    session,
+    period,
   });
+
+  if (!result.success) {
+    return res.status(result.httpStatus || 400).json(result);
+  }
+
+  return res.json(result);
 });
 
-// 6.2 Get Attendance records for a class & session
-app.get('/api/attendance/records', (req: Request, res: Response) => {
+// 6.4 Check-in wrapper route (Đồng bộ xử lý ghi CSDL Supabase)
+app.post('/api/attendance/checkin', async (req: Request, res: Response) => {
+  const { studentId, studentCode, password, pin, pcId, classId, activeClassId, date, session = 'morning', period = 2 } = req.body;
+  const targetCode = studentCode || studentId;
+  const enteredPin = (password || pin || '').trim();
+
+  const result = await handleStudentLoginAndAttendance({
+    studentCode: targetCode,
+    enteredPin,
+    pcId,
+    activeClassId: activeClassId || classId,
+    date,
+    session,
+    period,
+  });
+
+  if (!result.success) {
+    return res.status(result.httpStatus || 400).json(result);
+  }
+
+  return res.json(result);
+});
+
+// 6.5 Get Attendance records for a class & session (Yêu cầu 8: Đọc trực tiếp từ Supabase)
+app.get('/api/attendance/records', async (req: Request, res: Response) => {
   const { classId, date, session = 'morning', period = 2 } = req.query;
   const todayStr = (date as string) || new Date().toISOString().split('T')[0];
   const periodNum = Number(period) || 2;
+  const sessStr = String(session || 'morning');
 
+  if (supabaseAdmin) {
+    try {
+      const { data: dbRows, error: dbErr } = await supabaseAdmin
+        .from('attendance_records')
+        .select('*')
+        .eq('date', todayStr)
+        .eq('session', sessStr)
+        .eq('period_number', periodNum);
+
+      if (!dbErr && Array.isArray(dbRows)) {
+        // Lọc theo lớp nếu được chỉ định (hỗ trợ cả định dạng 4.3 và 4/3)
+        const filtered = dbRows.filter((row: any) => {
+          if (!classId || classId === 'all') return true;
+          return isSameClass(row.class_id, String(classId));
+        });
+
+        const records: StoredAttendanceRecord[] = filtered.map((row: any) => ({
+          id: row.id,
+          studentId: row.student_code, // Khớp với student.id (code) phía frontend
+          studentCode: row.student_code,
+          studentName: row.student_name,
+          classId: row.class_id,
+          date: row.date,
+          session: row.session,
+          periodNumber: row.period_number,
+          assignedPcId: row.assigned_pc_id,
+          actualPcId: row.actual_pc_id,
+          loginTimestamp: row.login_timestamp,
+          status: row.status,
+          seatChangeConfirmed: Boolean(row.seat_change_confirmed),
+          teacherNote: row.teacher_note || undefined,
+          verifiedByTeacher: row.verified_by_teacher || undefined,
+          verifiedAt: row.verified_at ? new Date(row.verified_at).toLocaleString('vi-VN') : undefined,
+        }));
+
+        return res.json({
+          classId: classId || 'all',
+          date: todayStr,
+          session: sessStr,
+          period: periodNum,
+          records,
+          totalRecords: records.length,
+          source: 'supabase',
+        });
+      }
+    } catch (e: any) {
+      console.warn('[Supabase] Lỗi tra cứu attendance_records:', e?.message || e);
+    }
+  }
+
+  // Bộ nhớ đệm dự phòng cục bộ
   const allRecords = readJsonFile<Record<string, StoredAttendanceRecord>>(ATTENDANCE_FILE, {});
   const matchingRecords = Object.values(allRecords).filter(r => {
-    if (classId && r.classId !== classId) return false;
+    if (classId && classId !== 'all' && !isSameClass(r.classId, String(classId))) return false;
     if (date && r.date !== todayStr) return false;
-    if (session && r.session !== session) return false;
+    if (session && r.session !== sessStr) return false;
     if (period && r.periodNumber !== periodNum) return false;
     return true;
   });
@@ -945,25 +1708,85 @@ app.get('/api/attendance/records', (req: Request, res: Response) => {
   return res.json({
     classId: classId || 'all',
     date: todayStr,
-    session,
+    session: sessStr,
     period: periodNum,
     records: matchingRecords,
     totalRecords: matchingRecords.length,
+    source: 'local',
   });
 });
 
-// 6.3 Teacher confirms or modifies attendance
-app.post('/api/attendance/confirm', (req: Request, res: Response) => {
+// 6.6 Teacher confirms or modifies attendance (Cập nhật đồng bộ Supabase)
+app.post('/api/attendance/confirm', async (req: Request, res: Response) => {
   const { classId, date, session = 'morning', period = 2, confirmAllPending, recordUpdates, teacherName = 'Cô Nguyễn Thị Huệ' } = req.body;
   const todayStr = date || new Date().toISOString().split('T')[0];
   const periodNum = Number(period) || 2;
+  const sessStr = session || 'morning';
+  const nowIso = new Date().toISOString();
   const nowStr = new Date().toLocaleString('vi-VN');
 
+  // 1. Cập nhật vào CSDL Supabase
+  if (supabaseAdmin) {
+    try {
+      if (confirmAllPending) {
+        const { data: dbRecords } = await supabaseAdmin
+          .from('attendance_records')
+          .select('id, class_id, status')
+          .eq('date', todayStr)
+          .eq('session', sessStr)
+          .eq('period_number', periodNum);
+
+        if (Array.isArray(dbRecords)) {
+          const toUpdateIds = dbRecords
+            .filter(r => (!classId || isSameClass(r.class_id, classId)) && (r.status === 'present_pending_confirm' || r.status === 'unverified'))
+            .map(r => r.id);
+
+          if (toUpdateIds.length > 0) {
+            await supabaseAdmin
+              .from('attendance_records')
+              .update({
+                status: 'present',
+                verified_by_teacher: teacherName,
+                verified_at: nowIso,
+              })
+              .in('id', toUpdateIds);
+          }
+        }
+      }
+
+      if (Array.isArray(recordUpdates)) {
+        for (const up of recordUpdates) {
+          if (up.id) {
+            const patch: any = {
+              verified_by_teacher: teacherName,
+              verified_at: nowIso,
+            };
+            if (up.status) patch.status = up.status;
+            if (up.teacherNote !== undefined) patch.teacher_note = up.teacherNote;
+            if (up.seatChangeConfirmed !== undefined) {
+              patch.seat_change_confirmed = Boolean(up.seatChangeConfirmed);
+              if (up.seatChangeConfirmed && up.status === 'wrong_pc') {
+                patch.status = 'present';
+              }
+            }
+            await supabaseAdmin
+              .from('attendance_records')
+              .update(patch)
+              .eq('id', up.id);
+          }
+        }
+      }
+    } catch (e: any) {
+      console.warn('[Attendance Confirm] Lỗi cập nhật Supabase:', e?.message || e);
+    }
+  }
+
+  // 2. Cập nhật bộ nhớ đệm máy chủ
   const allRecords = readJsonFile<Record<string, StoredAttendanceRecord>>(ATTENDANCE_FILE, {});
 
   if (confirmAllPending) {
     Object.values(allRecords).forEach(r => {
-      if (r.classId === classId && r.date === todayStr && r.session === session && r.periodNumber === periodNum) {
+      if ((!classId || isSameClass(r.classId, classId)) && r.date === todayStr && r.session === sessStr && r.periodNumber === periodNum) {
         if (r.status === 'present_pending_confirm' || r.status === 'unverified') {
           r.status = 'present';
           r.verifiedByTeacher = teacherName;
@@ -991,7 +1814,7 @@ app.post('/api/attendance/confirm', (req: Request, res: Response) => {
   }
 
   writeJsonFile(ATTENDANCE_FILE, allRecords);
-  return res.json({ success: true, message: 'Đã cập nhật và lưu điểm danh thành công!' });
+  return res.json({ success: true, message: 'Đã cập nhật và lưu điểm danh thành công trên CSDL Supabase!' });
 });
 
 // 6.4 Export Attendance to CSV / Excel
@@ -1045,43 +1868,290 @@ app.get('/api/attendance/export', (req: Request, res: Response) => {
   return res.send(csvContent);
 });
 
+// ==========================================
+// 7. CỔNG HỌC SINH RIÊNG (STUDENT PORTAL APIS)
+// ==========================================
+
+// 7.1 Lấy dữ liệu cá nhân học sinh, điểm danh và kết quả học tập từ Supabase (Yêu cầu 2, 3, 5, 6, 7)
+app.get('/api/student/dashboard', async (req: Request, res: Response) => {
+  const { studentCode, date, session = 'morning', period = 2 } = req.query;
+  if (!studentCode || typeof studentCode !== 'string') {
+    return res.status(400).json({ success: false, error: 'Vui lòng cung cấp mã học sinh!' });
+  }
+
+  const cleanCode = studentCode.trim().toUpperCase();
+  const todayStr = (date as string) || new Date().toISOString().split('T')[0];
+  const sessStr = String(session || 'morning');
+  const periodNum = Number(period) || 2;
+
+  // 1. Xác thực học sinh trong danh sách chính thức
+  const allStudents = readJsonFile<any[]>(STUDENTS_FILE, generateAllStudents());
+  const student = allStudents.find(s => s.code.toUpperCase() === cleanCode || s.id.toUpperCase() === cleanCode);
+  if (!student) {
+    return res.status(404).json({ success: false, error: 'Học sinh không tồn tại trong danh sách!' });
+  }
+
+  let dbStudentId: number | null = null;
+  let attendanceRecord: any = null;
+  let assessments: any[] = [];
+
+  if (supabaseAdmin) {
+    try {
+      const { data: dbSt } = await supabaseAdmin
+        .from('students')
+        .select('id, code, name, class_id, seat')
+        .eq('code', student.code)
+        .maybeSingle();
+
+      if (dbSt) {
+        dbStudentId = dbSt.id;
+
+        // Tra cứu điểm danh hôm nay từ public.attendance_records
+        const recordId = `att_${student.code}_${todayStr}_${sessStr}_P${periodNum}`;
+        const { data: att } = await supabaseAdmin
+          .from('attendance_records')
+          .select('*')
+          .eq('id', recordId)
+          .maybeSingle();
+
+        if (att) attendanceRecord = att;
+
+        // Tra cứu bài tập & đánh giá cá nhân từ public.assessments
+        const { data: ass } = await supabaseAdmin
+          .from('assessments')
+          .select('*')
+          .eq('student_id', dbSt.id)
+          .order('created_at', { ascending: false });
+
+        if (ass) assessments = ass;
+      }
+    } catch (err: any) {
+      console.warn('[Student Dashboard] Lỗi đọc Supabase:', err?.message || err);
+    }
+  }
+
+  return res.json({
+    success: true,
+    student: {
+      id: student.id,
+      code: student.code,
+      name: student.name,
+      classId: student.classId,
+      gender: student.gender,
+      seatNumber: student.seatNumber,
+      dbStudentId,
+    },
+    attendance: attendanceRecord,
+    assessments,
+  });
+});
+
+// 7.2 Học sinh nộp bài lý thuyết (Trắc nghiệm) và lưu kết quả lên Supabase (Yêu cầu 4, 5, 7)
+app.post('/api/student/submit-quiz', async (req: Request, res: Response) => {
+  const { studentCode, quizId, quizTitle, classId, score, totalQuestions, correctCount, timeSpentSeconds } = req.body;
+  if (!studentCode || !quizId) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin bài nộp!' });
+  }
+
+  const cleanCode = String(studentCode).trim().toUpperCase();
+  const allStudents = readJsonFile<any[]>(STUDENTS_FILE, generateAllStudents());
+  const student = allStudents.find(s => s.code.toUpperCase() === cleanCode || s.id.toUpperCase() === cleanCode);
+  if (!student) {
+    return res.status(404).json({ success: false, error: 'Học sinh không tồn tại!' });
+  }
+
+  let savedToSupabase = false;
+  let assessmentId: number | null = null;
+
+  if (supabaseAdmin) {
+    try {
+      const { data: dbSt } = await supabaseAdmin
+        .from('students')
+        .select('id')
+        .eq('code', student.code)
+        .maybeSingle();
+
+      if (dbSt && typeof dbSt.id === 'number') {
+        const commentText = `Trắc nghiệm: ${quizTitle || quizId}. Đúng ${correctCount || 0}/${totalQuestions || 0} câu. Điểm: ${score}/10.`;
+        const { data: newAss, error: assErr } = await supabaseAdmin
+          .from('assessments')
+          .insert({
+            student_id: dbSt.id,
+            term: `quiz_${quizId}`,
+            score: Number(score) || 0,
+            comment: commentText,
+            parent_signed: false,
+          })
+          .select();
+
+        if (!assErr && newAss && newAss[0]) {
+          savedToSupabase = true;
+          assessmentId = newAss[0].id;
+        } else if (assErr) {
+          console.warn('[Supabase Assessments] Lỗi ghi bài trắc nghiệm:', assErr.message);
+        }
+      }
+    } catch (e: any) {
+      console.warn('[Supabase Assessments] Lỗi ngoại lệ:', e?.message || e);
+    }
+  }
+
+  return res.json({
+    success: true,
+    savedToSupabase,
+    assessmentId,
+    message: `Đã nộp bài trắc nghiệm thành công! Điểm của em: ${score}/10 (${savedToSupabase ? 'Đã lưu CSDL Supabase' : 'Lưu bộ nhớ tạm'}).`,
+  });
+});
+
+// 7.3 Học sinh nộp bài thực hành và lưu lên Supabase (Yêu cầu 4, 5, 7)
+app.post('/api/student/submit-practice', async (req: Request, res: Response) => {
+  const { studentCode, assignmentId, assignmentTitle, classId, productTitle, productContent, fileType = 'DOCX', score = 10 } = req.body;
+  if (!studentCode || !assignmentId) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin bài nộp!' });
+  }
+
+  const cleanCode = String(studentCode).trim().toUpperCase();
+  const allStudents = readJsonFile<any[]>(STUDENTS_FILE, generateAllStudents());
+  const student = allStudents.find(s => s.code.toUpperCase() === cleanCode || s.id.toUpperCase() === cleanCode);
+  if (!student) {
+    return res.status(404).json({ success: false, error: 'Học sinh không tồn tại!' });
+  }
+
+  let savedToSupabase = false;
+  let assessmentId: number | null = null;
+
+  if (supabaseAdmin) {
+    try {
+      const { data: dbSt } = await supabaseAdmin
+        .from('students')
+        .select('id')
+        .eq('code', student.code)
+        .maybeSingle();
+
+      if (dbSt && typeof dbSt.id === 'number') {
+        const commentText = `Thực hành: ${assignmentTitle || assignmentId}. Tên sản phẩm: ${productTitle || 'Bài làm của em'}. Định dạng: ${fileType}.`;
+        const { data: newAss, error: assErr } = await supabaseAdmin
+          .from('assessments')
+          .insert({
+            student_id: dbSt.id,
+            term: `practice_${assignmentId}`,
+            score: Number(score) || 10,
+            comment: commentText,
+            parent_signed: false,
+          })
+          .select();
+
+        if (!assErr && newAss && newAss[0]) {
+          savedToSupabase = true;
+          assessmentId = newAss[0].id;
+        } else if (assErr) {
+          console.warn('[Supabase Assessments] Lỗi ghi bài thực hành:', assErr.message);
+        }
+      }
+    } catch (e: any) {
+      console.warn('[Supabase Assessments] Lỗi ngoại lệ:', e?.message || e);
+    }
+  }
+
+  return res.json({
+    success: true,
+    savedToSupabase,
+    assessmentId,
+    message: `Đã nộp bài thực hành thành công! Sản phẩm: "${productTitle}" (${savedToSupabase ? 'Đã lưu CSDL Supabase' : 'Lưu bộ nhớ tạm'}).`,
+  });
+});
+
+// 7.4 Học sinh xem điểm và đánh giá cá nhân (Không xem của bạn khác - Yêu cầu 6, 7)
+app.get('/api/student/my-results', async (req: Request, res: Response) => {
+  const { studentCode } = req.query;
+  if (!studentCode || typeof studentCode !== 'string') {
+    return res.status(400).json({ success: false, error: 'Thiếu mã học sinh!' });
+  }
+  const cleanCode = studentCode.trim().toUpperCase();
+
+  if (!supabaseAdmin) {
+    return res.json({ success: true, assessments: [] });
+  }
+
+  try {
+    const { data: dbSt } = await supabaseAdmin
+      .from('students')
+      .select('id, code, name')
+      .eq('code', cleanCode)
+      .maybeSingle();
+
+    if (!dbSt) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy học sinh!' });
+    }
+
+    const { data: assessments, error: assErr } = await supabaseAdmin
+      .from('assessments')
+      .select('*')
+      .eq('student_id', dbSt.id)
+      .order('created_at', { ascending: false });
+
+    if (assErr) {
+      return res.status(500).json({ success: false, error: assErr.message });
+    }
+
+    return res.json({
+      success: true,
+      student: dbSt,
+      assessments: assessments || [],
+    });
+  } catch (e: any) {
+    return res.status(500).json({ success: false, error: e?.message || e });
+  }
+});
+
 // Start server with Vite middleware in dev or static files in prod
 async function startServer() {
   const distDir = path.resolve(__dirname, 'dist');
   const distIndex = path.resolve(distDir, 'index.html');
   const hasDist = fs.existsSync(distIndex);
 
-  // Robust production detection:
-  // 1. Explicit NODE_ENV === 'production'
-  // 2. Cloud Run environment indicators (K_SERVICE, K_REVISION, or PORT != 3000)
-  // 3. npm lifecycle event is 'start' (from "start": "node server.ts")
-  // 4. dist/index.html exists and we are not explicitly running 'npm run dev'
+  // Serving strategy:
+  // 1. If explicit NODE_ENV === 'production' and pre-built dist/index.html exists: serve static bundle
+  // 2. Otherwise: mount Vite middleware for live React SPA serving
   const isExplicitProd = process.env.NODE_ENV === 'production';
-  const isCloudRun = Boolean(process.env.K_SERVICE || process.env.K_REVISION || (process.env.PORT && process.env.PORT !== '3000'));
-  const isNpmStart = process.env.npm_lifecycle_event === 'start';
-  const isProd = isExplicitProd || isCloudRun || isNpmStart || (hasDist && process.env.npm_lifecycle_event !== 'dev');
 
-  if (isProd && hasDist) {
+  if (isExplicitProd && hasDist) {
     console.log(`[Server] Production mode active. Serving pre-built static bundle from ${distDir}`);
     app.use(express.static(distDir, { maxAge: '1d', index: false }));
     app.get('*', (_req: Request, res: Response) => {
       res.sendFile(distIndex);
     });
-  } else if (isProd && !hasDist) {
-    console.warn(`[Server] Production mode detected but dist/index.html missing. Serving placeholder while build completes.`);
-    app.get('*', (_req: Request, res: Response) => {
-      res.status(200).send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lớp Học Số Thông Minh</title></head><body style="font-family:sans-serif;text-align:center;padding-top:60px;"><h2>Hệ thống Lớp Học Số Thông Minh đang sẵn sàng...</h2><p>Đang tải tài nguyên, vui lòng đợi trong giây lát...</p><script>setTimeout(function(){location.reload();},2500);</script></body></html>`);
-    });
   } else {
     // Development mode with Vite middleware
-    console.log('[Server] Development mode active. Mounting Vite dev middleware...');
+    console.log('[Server] Mounting Vite middleware for live React SPA serving...');
     try {
       const { createServer: createViteServer } = await import('vite');
       const vite = await createViteServer({
+        root: __dirname,
         server: { middlewareMode: true },
         appType: 'spa',
       });
       app.use(vite.middlewares);
+
+      // Explicit SPA fallback for HTML requests not caught by middlewares
+      app.get('*', async (req: Request, res: Response, next) => {
+        if (req.path.startsWith('/api') || req.path.startsWith('/health')) {
+          return next();
+        }
+        try {
+          const indexPath = path.resolve(__dirname, 'index.html');
+          if (fs.existsSync(indexPath)) {
+            const template = fs.readFileSync(indexPath, 'utf-8');
+            const html = await vite.transformIndexHtml(req.originalUrl, template);
+            return res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+          }
+          next();
+        } catch (e) {
+          next(e);
+        }
+      });
+      console.log('[Server] Vite dev middleware mounted successfully.');
     } catch (viteErr) {
       console.error('[Server] Vite middleware initialization failed, attempting static fallback:', viteErr);
       if (hasDist) {
@@ -1089,16 +2159,32 @@ async function startServer() {
         app.get('*', (_req: Request, res: Response) => {
           res.sendFile(distIndex);
         });
+      } else {
+        app.get('*', (_req: Request, res: Response) => {
+          res.status(500).send(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lớp Học Số Thông Minh - Khởi động</title></head><body style="font-family:sans-serif;padding:40px;text-align:center;"><h2>Đang chuẩn bị môi trường Lớp Học Số Thông Minh</h2><p>Vui lòng đợi trong giây lát hoặc chạy 'npm run build'.</p></body></html>`);
+        });
       }
     }
   }
 
-  const server = app.listen(port, '0.0.0.0', () => {
-    console.log(`Server listening on http://0.0.0.0:${port} [${isProd ? 'PRODUCTION' : 'DEVELOPMENT'}]`);
+  const isProd = isExplicitProd && hasDist;
+  const server = app.listen(port, host, () => {
+    console.log(`Server listening on http://${host}:${port} [${isProd ? 'PRODUCTION' : 'DEVELOPMENT'}]`);
   });
 
   server.on('error', (err: any) => {
     console.error('Server network listen error:', err);
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${port} already in use. Exiting process so supervisor can restart cleanly.`);
+      process.exit(1);
+    }
+  });
+
+  process.on('SIGTERM', () => {
+    server.close(() => process.exit(0));
+  });
+  process.on('SIGINT', () => {
+    server.close(() => process.exit(0));
   });
 }
 

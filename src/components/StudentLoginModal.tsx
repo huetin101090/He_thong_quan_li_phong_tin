@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { ClassInfo, Student } from '../types/classroom';
 import { studentLoginAuth, fetchWorkstations, WorkstationItem } from '../services/attendanceService';
+import { changeStudentPin } from '../services/studentAccountService';
 import { UserSession } from '../types/assignments';
 
 interface StudentLoginModalProps {
@@ -61,6 +62,13 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
   const [workstations, setWorkstations] = useState<WorkstationItem[]>([]);
   const [showTeacherLookup, setShowTeacherLookup] = useState(false);
 
+  // Self PIN Change state (Requirement 8)
+  const [showChangePin, setShowChangePin] = useState(false);
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
+  const [changePinMsg, setChangePinMsg] = useState<{ text: string; isError: boolean } | null>(null);
+  const [isChangingPin, setIsChangingPin] = useState(false);
+
   // Load workstations and reset inputs when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -98,14 +106,23 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
       return;
     }
 
+    // Tự động nhận diện lớp từ tiền tố mã học sinh (VD: HS43-07 -> Lớp 4.3)
+    const classMatch = trimmedCode.match(/^HS([345])([3456])/i);
+    const detectedClass = classMatch ? `${classMatch[1]}.${classMatch[2]}` : null;
+    const effectiveClassId = detectedClass || currentClassId;
+
+    if (detectedClass && onSelectClass && detectedClass !== currentClassId) {
+      onSelectClass(detectedClass);
+    }
+
     setIsSubmitting(true);
     try {
-      // Call Real Server-Side Authentication API with SHA-256 Hash check
+      // Call Real Server-Side Authentication API with bcrypt & Supabase check
       const res = await studentLoginAuth({
         studentCode: trimmedCode,
         password: trimmedPass,
         pcId: selectedPcId,
-        activeClassId: currentClassId,
+        activeClassId: effectiveClassId,
         date: currentDate,
         session: daySession,
         period: periodNumber,
@@ -134,6 +151,41 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  // Handle Student Self PIN Change (Requirement 8)
+  const handleChangePinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePinMsg(null);
+    const cleanNew = newPinInput.trim();
+    const cleanConfirm = confirmPinInput.trim();
+
+    if (!cleanNew || cleanNew.length < 4 || cleanNew.length > 8) {
+      setChangePinMsg({ text: 'Mã PIN mới phải từ 4 đến 8 chữ số!', isError: true });
+      return;
+    }
+
+    if (cleanNew !== cleanConfirm) {
+      setChangePinMsg({ text: 'Mã PIN nhập lại không khớp!', isError: true });
+      return;
+    }
+
+    setIsChangingPin(true);
+    const res = await changeStudentPin(studentCodeInput.trim(), passwordInput.trim(), cleanNew);
+    if (res.success) {
+      setChangePinMsg({ text: res.message || 'Đổi mã PIN thành công!', isError: false });
+      setPasswordInput(cleanNew);
+      if (loginResult?.student) {
+        loginResult.student.mustChangePinOnFirstLogin = false;
+      }
+      setTimeout(() => {
+        setShowChangePin(false);
+        setChangePinMsg(null);
+      }, 2500);
+    } else {
+      setChangePinMsg({ text: res.error || 'Đổi mã PIN không thành công!', isError: true });
+    }
+    setIsChangingPin(false);
   };
 
   // Continue to lesson after reviewing login result
@@ -293,6 +345,79 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
               </button>
             </div>
 
+            {/* Requirement 8: Prompt student to change PIN if mustChangePinOnFirstLogin or voluntarily */}
+            <div className="p-3 bg-indigo-50/90 rounded-2xl border border-indigo-200 text-indigo-950 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-bold flex items-center gap-1.5 text-indigo-900">
+                  <Key className="w-4 h-4 text-indigo-600" />
+                  <span>Bảo mật mã PIN cá nhân:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowChangePin(!showChangePin);
+                    setChangePinMsg(null);
+                  }}
+                  className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-bold transition cursor-pointer"
+                >
+                  {showChangePin ? 'Đóng' : (loginResult?.student?.mustChangePinOnFirstLogin ? '🔑 Đổi mã PIN ngay (Khuyên dùng)' : 'Đổi mã PIN')}
+                </button>
+              </div>
+
+              {loginResult?.student?.mustChangePinOnFirstLogin && !showChangePin && (
+                <p className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-xl border border-amber-200">
+                  ⚠️ Mã PIN của em là mã khởi tạo do Thầy/Cô cấp. Em hãy nhấn <strong>"Đổi mã PIN ngay"</strong> để đặt mật khẩu bí mật riêng nhé!
+                </p>
+              )}
+
+              {showChangePin && (
+                <form onSubmit={handleChangePinSubmit} className="space-y-2 pt-1 border-t border-indigo-100">
+                  {changePinMsg && (
+                    <div className={`p-2 rounded-lg text-[11px] font-medium ${
+                      changePinMsg.isError ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {changePinMsg.text}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-0.5">Mã PIN mới (4-8 số):</label>
+                      <input
+                        type="password"
+                        maxLength={8}
+                        value={newPinInput}
+                        onChange={(e) => setNewPinInput(e.target.value.replace(/\D/g, ''))}
+                        placeholder="VD: 123456"
+                        className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-0.5">Nhập lại mã PIN mới:</label>
+                      <input
+                        type="password"
+                        maxLength={8}
+                        value={confirmPinInput}
+                        onChange={(e) => setConfirmPinInput(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Nhập lại chính xác"
+                        className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isChangingPin}
+                    className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs transition cursor-pointer disabled:opacity-50"
+                  >
+                    {isChangingPin ? 'Đang cập nhật...' : 'Lưu mã PIN mới'}
+                  </button>
+                </form>
+              )}
+            </div>
+
             {/* Action Buttons */}
             <div className="pt-2 flex items-center gap-3">
               <button
@@ -369,8 +494,16 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
                 required
                 value={studentCodeInput}
                 onChange={(e) => {
-                  setStudentCodeInput(e.target.value.toUpperCase());
+                  const val = e.target.value.toUpperCase();
+                  setStudentCodeInput(val);
                   setErrorMsg(null);
+                  const m = val.match(/^HS([345])([3456])/i);
+                  if (m && onSelectClass) {
+                    const matchedClass = `${m[1]}.${m[2]}`;
+                    if (classes.some(c => c.id === matchedClass)) {
+                      onSelectClass(matchedClass);
+                    }
+                  }
                 }}
                 placeholder="Ví dụ: HS43-07..."
                 className="w-full px-3 py-2 bg-slate-50 border-2 border-slate-300 focus:border-blue-600 focus:bg-white rounded-xl font-mono font-black text-blue-950 text-xs uppercase outline-none transition shadow-2xs"

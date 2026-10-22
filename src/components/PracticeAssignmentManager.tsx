@@ -58,7 +58,7 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
   students,
   currentClassId,
   onSwitchSession,
-  selectedSubject = 'all',
+  selectedSubject = 'tin',
   onSelectSubject,
 }) => {
   const [assignments, setAssignments] = useState<PracticeAssignment[]>(() => getStoredPracticeAssignments());
@@ -66,12 +66,12 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
 
   // Filter
   const [gradeFilter, setGradeFilter] = useState<'all' | 3 | 4 | 5>('all');
-  const [subjectFilter, setSubjectFilter] = useState<'all' | 'tin' | 'congnghe'>(selectedSubject);
+  const [subjectFilter, setSubjectFilter] = useState<'all' | 'tin' | 'congnghe'>('tin');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Sync with prop
   useEffect(() => {
-    setSubjectFilter(selectedSubject);
+    setSubjectFilter('tin');
   }, [selectedSubject]);
 
   const handleSubjectChange = (subj: 'all' | 'tin' | 'congnghe') => {
@@ -119,12 +119,12 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
   };
   const activeStudentClassId = session.classId || activeStudent.classId || currentClassId || '4/5';
 
-  // Filtering assignments
+  // Filtering assignments (strictly Môn Tin học)
   const filteredAssignments = assignments.filter(a => {
     if (gradeFilter !== 'all' && a.grade !== gradeFilter) return false;
-    if (subjectFilter !== 'all') {
-      if (a.subject && a.subject !== subjectFilter) return false;
-    }
+    // Exclude any congnghe assignment
+    if (a.subject === 'congnghe') return false;
+    if (a.subject && a.subject !== 'tin') return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = a.title.toLowerCase().includes(q);
@@ -473,26 +473,9 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
             />
           </div>
 
-          {/* Subject filter */}
-          <div className="inline-flex rounded-xl p-0.5 bg-slate-100 border border-slate-200 text-xs font-semibold">
-            <button
-              onClick={() => handleSubjectChange('all')}
-              className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${subjectFilter === 'all' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:text-slate-900'}`}
-            >
-              Cả 2 môn
-            </button>
-            <button
-              onClick={() => handleSubjectChange('tin')}
-              className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${subjectFilter === 'tin' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:text-blue-700'}`}
-            >
-              💻 Tin học
-            </button>
-            <button
-              onClick={() => handleSubjectChange('congnghe')}
-              className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${subjectFilter === 'congnghe' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:text-emerald-700'}`}
-            >
-              🛠️ Công nghệ
-            </button>
+          {/* Active Subject Badge (Tin học) */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-bold shadow-xs">
+            <span>💻 Môn Tin học</span>
           </div>
 
           {/* Grade filter */}

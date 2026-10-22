@@ -1,0 +1,250 @@
+code,name,gender,class_code,seat_number,assigned_pc,seat
+HS43-01,"Nguyễn Ngọc Bảo Anh",female,4.3,1,PC01,Máy-01
+HS43-02,"Nguyễn Phan Ngọc Bảo",male,4.3,2,PC02,Máy-02
+HS43-03,"Trần Gia Bảo",male,4.3,3,PC03,Máy-03
+HS43-04,"Lê Thị Bảo Châu",female,4.3,4,PC04,Máy-04
+HS43-05,"Nguyễn Thanh Dương",female,4.3,5,PC05,Máy-05
+HS43-06,"Trần Anh Đức",male,4.3,6,PC06,Máy-06
+HS43-07,"Trần Văn Hà",male,4.3,7,PC07,Máy-07
+HS43-08,"Phan Trương Gia Hân",female,4.3,8,PC08,Máy-08
+HS43-09,"Võ Gia Hân",female,4.3,9,PC09,Máy-09
+HS43-10,"Nguyễn Tấn Nguyên Khang",male,4.3,10,PC10,Máy-10
+HS43-11,"Nguyễn Nhật Minh",male,4.3,11,PC11,Máy-11
+HS43-12,"Đặng Khánh Ngân",female,4.3,12,PC12,Máy-12
+HS43-13,"Hồ Kim Ngân",female,4.3,13,PC13,Máy-13
+HS43-14,"Phan Thị Kim Ngân",female,4.3,14,PC14,Máy-14
+HS43-15,"Vũ Hoàng Bảo Ngọc",female,4.3,15,PC15,Máy-15
+HS43-16,"Lê Khôi Nguyên",female,4.3,16,PC16,Máy-16
+HS43-17,"Nguyễn Ngọc Thảo Nguyên",female,4.3,17,PC17,Máy-17
+HS43-18,"Bùi Võ Tấn Sang",male,4.3,18,PC18,Máy-18
+HS43-19,"Trương Nguyễn Sang",male,4.3,19,PC19,Máy-19
+HS43-20,"Vương Thị Thanh Thuý",female,4.3,20,PC20,Máy-20
+HS43-21,"Lê Bảo Thy",male,4.3,21,PC01,Máy-01
+HS43-22,"Tô Bảo Trang",female,4.3,22,PC02,Máy-02
+HS43-23,"Tô Bảo Trâm",female,4.3,23,PC03,Máy-03
+HS43-24,"Phùng Thanh Tú",male,4.3,24,PC04,Máy-04
+HS43-25,"Trần Ngọc Anh Tuấn",male,4.3,25,PC05,Máy-05
+HS43-26,"Bùi Trần Nhã Uyên",female,4.3,26,PC06,Máy-06
+HS43-27,"Nguyễn Đức Khôi Vĩ",male,4.3,27,PC07,Máy-07
+HS43-28,"Nguyễn Phạm Tường Vy",female,4.3,28,PC08,Máy-08
+HS43-29,"Phạm Thị Tường Vy",female,4.3,29,PC09,Máy-09
+HS44-01,"Trà Quốc Bảo",male,4.4,1,PC01,Máy-01
+HS44-02,"Lê Viết Công",male,4.4,2,PC02,Máy-02
+HS44-03,"Trương Văn Dũng",male,4.4,3,PC03,Máy-03
+HS44-04,"Thái Khánh Duy",male,4.4,4,PC04,Máy-04
+HS44-05,"Trần Hữu Quốc Đạt",male,4.4,5,PC05,Máy-05
+HS44-06,"Nguyễn Ngọc Nhã Hân",female,4.4,6,PC06,Máy-06
+HS44-07,"Võ Văn Gia Huy",male,4.4,7,PC07,Máy-07
+HS44-08,"Nguyễn Văn Hữu",male,4.4,8,PC08,Máy-08
+HS44-09,"Huỳnh Nguyên Khang",male,4.4,9,PC09,Máy-09
+HS44-10,"Nguyễn Hữu Khang",male,4.4,10,PC10,Máy-10
+HS44-11,"Trần Phúc Lâm",male,4.4,11,PC11,Máy-11
+HS44-12,"Nguyễn Vũ Bảo Long",male,4.4,12,PC12,Máy-12
+HS44-13,"Trà Cao Bảo Long",male,4.4,13,PC13,Máy-13
+HS44-14,"Lê Thị Khánh Ly",female,4.4,14,PC14,Máy-14
+HS44-15,"Nguyễn Thảo My",female,4.4,15,PC15,Máy-15
+HS44-16,"Nguyễn Khánh Như",female,4.4,16,PC16,Máy-16
+HS44-17,"Trần Nguyễn Kim Như",female,4.4,17,PC17,Máy-17
+HS44-18,"Võ Quỳnh Như",female,4.4,18,PC18,Máy-18
+HS44-19,"Nguyễn Nhật Quốc",male,4.4,19,PC19,Máy-19
+HS44-20,"Nguyễn Thị Bảo Quyên",female,4.4,20,PC20,Máy-20
+HS44-21,"Mai Tấn Tài",male,4.4,21,PC01,Máy-01
+HS44-22,"Nguyễn Quang Thịnh",male,4.4,22,PC02,Máy-02
+HS44-23,"Thái Tấn Thông",male,4.4,23,PC03,Máy-03
+HS44-24,"Nguyễn Đức Trung Tín",male,4.4,24,PC04,Máy-04
+HS44-25,"Trương Huỳnh Bảo Toàn",male,4.4,25,PC05,Máy-05
+HS44-26,"Lê Trương Hạ Trâm",female,4.4,26,PC06,Máy-06
+HS44-27,"Võ Thị Thùy Trâm",female,4.4,27,PC07,Máy-07
+HS44-28,"Trương Thị Thanh Vân",female,4.4,28,PC08,Máy-08
+HS44-29,"Nguyễn Quang Vương",male,4.4,29,PC09,Máy-09
+HS45-01,"Nguyễn Thị Trường An",female,4.5,1,PC01,Máy-01
+HS45-02,"Nguyễn Phi Gia Bảo",male,4.5,2,PC02,Máy-02
+HS45-03,"Nguyễn Mạnh Cường",male,4.5,3,PC03,Máy-03
+HS45-04,"Trần Quang Đại",male,4.5,4,PC04,Máy-04
+HS45-05,"Lưu Trương Linh Đan",female,4.5,5,PC05,Máy-05
+HS45-06,"Nguyễn Công Kha",male,4.5,6,PC06,Máy-06
+HS45-07,"Trần Tuấn Kiệt",male,4.5,7,PC07,Máy-07
+HS45-08,"Nguyễn Bảo Ngân",female,4.5,8,PC08,Máy-08
+HS45-09,"Trần Lê Kim Ngân",female,4.5,9,PC09,Máy-09
+HS45-10,"Trần Trọng Nhân",male,4.5,10,PC10,Máy-10
+HS45-11,"Nguyễn Thị Thanh Thảo",female,4.5,11,PC11,Máy-11
+HS45-12,"Trần Thị Minh Thư",female,4.5,12,PC12,Máy-12
+HS45-13,"Đoàn Võ Văn Tịnh",male,4.5,13,PC13,Máy-13
+HS45-14,"Nguyễn Ngọc Bảo Trâm",female,4.5,14,PC14,Máy-14
+HS45-15,"Nguyễn Mai Trinh",male,4.5,15,PC15,Máy-15
+HS45-16,"Trần Thị Minh Tuyết",female,4.5,16,PC16,Máy-16
+HS45-17,"Trần Thị Nhã Uyên",female,4.5,17,PC17,Máy-17
+HS45-18,"Thái Phương Yên",female,4.5,18,PC18,Máy-18
+HS55-01,"Trần Vân Anh",male,5.5,1,PC01,Máy-01
+HS55-02,"Nguyễn Ngọc Bảo Ân",female,5.5,2,PC02,Máy-02
+HS55-03,"Võ Hoàng Ân",male,5.5,3,PC03,Máy-03
+HS55-04,"Dương Quang Thiên Bảo",male,5.5,4,PC04,Máy-04
+HS55-05,"Trương Văn Cường",male,5.5,5,PC05,Máy-05
+HS55-06,"Phạm Huỳnh Băng Di",male,5.5,6,PC06,Máy-06
+HS55-07,"Nguyễn Hương Giang",female,5.5,7,PC07,Máy-07
+HS55-08,"Nguyễn Thị Phương Giang",female,5.5,8,PC08,Máy-08
+HS55-09,"Nguyễn Vũ Nhật Hạ",male,5.5,9,PC09,Máy-09
+HS55-10,"Nguyễn Thị Gia Hân",female,5.5,10,PC10,Máy-10
+HS55-11,"Thái Gia Hân",female,5.5,11,PC11,Máy-11
+HS55-12,"Nguyễn Thị Thúy Hậu",female,5.5,12,PC12,Máy-12
+HS55-13,"Trần Văn Hiếu",male,5.5,13,PC13,Máy-13
+HS55-14,"Lê Khánh Huyền",female,5.5,14,PC14,Máy-14
+HS55-15,"Võ Thị Ánh Minh",female,5.5,15,PC15,Máy-15
+HS55-16,"Dương Nhật Nam",male,5.5,16,PC16,Máy-16
+HS55-17,"Đỗ Thị Mỹ Nhân",female,5.5,17,PC17,Máy-17
+HS55-18,"Đặng Thị Yến Nhi",female,5.5,18,PC18,Máy-18
+HS55-19,"Trương Diệp Nhi",female,5.5,19,PC19,Máy-19
+HS55-20,"Võ Quỳnh Như",female,5.5,20,PC20,Máy-20
+HS55-21,"Nguyễn Xuân Phúc",male,5.5,21,PC01,Máy-01
+HS55-22,"Trần Văn Phúc",male,5.5,22,PC02,Máy-02
+HS55-23,"Trịnh Minh Phúc",male,5.5,23,PC03,Máy-03
+HS55-24,"Trương Thiên Phúc",male,5.5,24,PC04,Máy-04
+HS55-25,"Trần Trung Tá",male,5.5,25,PC05,Máy-05
+HS55-26,"Lê Viết Thảo",female,5.5,26,PC06,Máy-06
+HS55-27,"Nguyễn Quang Thịnh",male,5.5,27,PC07,Máy-07
+HS55-28,"Lê Phương Thư",female,5.5,28,PC08,Máy-08
+HS55-29,"Trương Thị Anh Thư",female,5.5,29,PC09,Máy-09
+HS55-30,"Phạm Thị Hoài Thương",female,5.5,30,PC10,Máy-10
+HS55-31,"Bùi Trương Bảo Trân",female,5.5,31,PC11,Máy-11
+HS55-32,"Nguyễn Quang Trí",male,5.5,32,PC12,Máy-12
+HS55-33,"Trương Quang Tuấn",male,5.5,33,PC13,Máy-13
+HS55-34,"Lê Tuấn Bình",male,5.5,34,PC14,Máy-14
+HS56-01,"Trương Thị Bảo An",female,5.6,1,PC01,Máy-01
+HS56-02,"Đặng Tấn Bảo",male,5.6,2,PC02,Máy-02
+HS56-03,"Bùi Trịnh Hoàng Diễm",male,5.6,3,PC03,Máy-03
+HS56-04,"Nguyễn Thanh Hoàng Dung",female,5.6,4,PC04,Máy-04
+HS56-05,"Nguyễn Phan Minh Đạt",male,5.6,5,PC05,Máy-05
+HS56-06,"Trần Huỳnh Nhã Hân",female,5.6,6,PC06,Máy-06
+HS56-07,"Nguyễn Văn Hậu",male,5.6,7,PC07,Máy-07
+HS56-08,"Nguyễn Ngọc Hiếu",male,5.6,8,PC08,Máy-08
+HS56-09,"Bùi Tấn Anh Khoa",male,5.6,9,PC09,Máy-09
+HS56-10,"Nguyễn Hoàng Thùy Linh",female,5.6,10,PC10,Máy-10
+HS56-11,"Nguyễn Văn Long",male,5.6,11,PC11,Máy-11
+HS56-12,"Hàng Thị Trúc Ly",female,5.6,12,PC12,Máy-12
+HS56-13,"Thái Thiên Ngọc",female,5.6,13,PC13,Máy-13
+HS56-14,"Trương Thị Yến Nhung",female,5.6,14,PC14,Máy-14
+HS56-15,"Huỳnh Lê Phương",female,5.6,15,PC15,Máy-15
+HS56-16,"Nguyễn Bùi Tiểu Quyên",female,5.6,16,PC16,Máy-16
+HS56-17,"Lê Dương Sơn",male,5.6,17,PC17,Máy-17
+HS56-18,"Hồ Xuân Kiều Thơ",female,5.6,18,PC18,Máy-18
+HS56-19,"Lê Nguyễn An Trường",male,5.6,19,PC19,Máy-19
+HS34-01,"Võ Nguyễn Khánh An",female,3.4,1,PC01,Máy-01
+HS34-02,"Trương Nguyễn Minh Anh",male,3.4,2,PC02,Máy-02
+HS34-03,"Hồ Gia Bảo",male,3.4,3,PC03,Máy-03
+HS34-04,"Trần Hữu Đạt",male,3.4,4,PC04,Máy-04
+HS34-05,"Nguyễn Trường Hải Đăng",male,3.4,5,PC05,Máy-05
+HS34-06,"Lê Đỗ Gia Hân",female,3.4,6,PC06,Máy-06
+HS34-07,"Võ Khả Hân",female,3.4,7,PC07,Máy-07
+HS34-08,"Võ Khánh Huyền",female,3.4,8,PC08,Máy-08
+HS34-09,"Bùi Bảo Gia Khiêm",male,3.4,9,PC09,Máy-09
+HS34-10,"Nguyễn Minh Khôi",male,3.4,10,PC10,Máy-10
+HS34-11,"Trương Đăng Khôi",male,3.4,11,PC11,Máy-11
+HS34-12,"Lê Ngọc Tường Lam",female,3.4,12,PC12,Máy-12
+HS34-13,"Trương Văn Lâm",male,3.4,13,PC13,Máy-13
+HS34-14,"Nguyễn Mỹ Lệ",female,3.4,14,PC14,Máy-14
+HS34-15,"Bùi Vương Lên",male,3.4,15,PC15,Máy-15
+HS34-16,"Trương Thị Mỹ Linh",female,3.4,16,PC16,Máy-16
+HS34-17,"Lê Trần Sương Mây",male,3.4,17,PC17,Máy-17
+HS34-18,"Lê Khánh Nam",male,3.4,18,PC18,Máy-18
+HS34-19,"Đặng Thị Kim Ngân",female,3.4,19,PC19,Máy-19
+HS34-20,"Nguyễn Phan Thành Nhân",male,3.4,20,PC20,Máy-20
+HS34-21,"Huỳnh Lê Hoài Nhiên",male,3.4,21,PC01,Máy-01
+HS34-22,"Đặng Võ Thị Phi Nhung",female,3.4,22,PC02,Máy-02
+HS34-23,"Nguyễn Tấn Thiên Phúc",male,3.4,23,PC03,Máy-03
+HS34-24,"Lê Thanh Thanh",male,3.4,24,PC04,Máy-04
+HS34-25,"Trần Phương Thảo",female,3.4,25,PC05,Máy-05
+HS34-26,"Nguyễn Hữu Thắng",male,3.4,26,PC06,Máy-06
+HS34-27,"Nguyễn Anh Thư",female,3.4,27,PC07,Máy-07
+HS34-28,"Đỗ Phương Trang",female,3.4,28,PC08,Máy-08
+HS34-29,"Lại Thị Huyền Trang",female,3.4,29,PC09,Máy-09
+HS34-30,"Trương Văn Xuân Trường",male,3.4,30,PC10,Máy-10
+HS34-31,"Bùi Anh Tú",male,3.4,31,PC11,Máy-11
+HS35-01,"Nguyễn Lê Thiên Ái",male,3.5,1,PC01,Máy-01
+HS35-02,"Bùi Quỳnh Anh",female,3.5,2,PC02,Máy-02
+HS35-03,"Hà Tú Anh",male,3.5,3,PC03,Máy-03
+HS35-04,"Nguyễn Hoàng Duy Anh",male,3.5,4,PC04,Máy-04
+HS35-05,"Nguyễn Lại Thanh Bình",male,3.5,5,PC05,Máy-05
+HS35-06,"Nguyễn Phương Chi",female,3.5,6,PC06,Máy-06
+HS35-07,"Phạm Thiên Di",male,3.5,7,PC07,Máy-07
+HS35-08,"Trần Đình Dũng",male,3.5,8,PC08,Máy-08
+HS35-09,"Trương Quốc Đạt",male,3.5,9,PC09,Máy-09
+HS35-10,"Trần Thị Gia Hân",female,3.5,10,PC10,Máy-10
+HS35-11,"Trương Văn Huy",male,3.5,11,PC11,Máy-11
+HS35-12,"Ung Gia Khang",male,3.5,12,PC12,Máy-12
+HS35-13,"Nguyễn Quang Khánh",male,3.5,13,PC13,Máy-13
+HS35-14,"Nguyễn Văn Khánh",male,3.5,14,PC14,Máy-14
+HS35-15,"Nguyễn Gia Khiêm",male,3.5,15,PC15,Máy-15
+HS35-16,"Ôn Nguyễn Đăng Khoa",male,3.5,16,PC16,Máy-16
+HS35-17,"Trương Lê Anh Khoa",male,3.5,17,PC17,Máy-17
+HS35-18,"Nguyễn Minh Tuấn Kiệt",male,3.5,18,PC18,Máy-18
+HS35-19,"Trương Thị Kiều Linh",female,3.5,19,PC19,Máy-19
+HS35-20,"Bùi Bảo Long",male,3.5,20,PC20,Máy-20
+HS35-21,"Trà Thị Lợi",female,3.5,21,PC01,Máy-01
+HS35-22,"Võ Quang Minh",male,3.5,22,PC02,Máy-02
+HS35-23,"Nguyễn Đức Thiên Ngân",male,3.5,23,PC03,Máy-03
+HS35-24,"Nguyễn Ngọc Nhi",female,3.5,24,PC04,Máy-04
+HS35-25,"Trương Thị Quỳnh Nhi",female,3.5,25,PC05,Máy-05
+HS35-26,"Nguyễn Quỳnh Như",female,3.5,26,PC06,Máy-06
+HS35-27,"Trương Văn Định Thiên",male,3.5,27,PC07,Máy-07
+HS35-28,"Lê Ngọc Anh Thư",female,3.5,28,PC08,Máy-08
+HS35-29,"Lê Anh Triều",male,3.5,29,PC09,Máy-09
+HS35-30,"Lê Phan Anh Tuấn",male,3.5,30,PC10,Máy-10
+HS35-31,"Võ Thị Tường Vy",female,3.5,31,PC11,Máy-11
+HS36-01,"Trần Ngọc Linh Đan",female,3.6,1,PC01,Máy-01
+HS36-02,"Nguyễn Gia Huy",male,3.6,2,PC02,Máy-02
+HS36-03,"Phạm Văn Hưng",male,3.6,3,PC03,Máy-03
+HS36-04,"Trần Trung Gia Hưng",male,3.6,4,PC04,Máy-04
+HS36-05,"Hồ Hy",male,3.6,5,PC05,Máy-05
+HS36-06,"Lê Nguyễn Minh Khang",male,3.6,6,PC06,Máy-06
+HS36-07,"Võ Đặng Anh Khoa",male,3.6,7,PC07,Máy-07
+HS36-08,"Nguyễn Văn Thành Khôi",male,3.6,8,PC08,Máy-08
+HS36-09,"Hàng Thị Trúc Linh",female,3.6,9,PC09,Máy-09
+HS36-10,"Lê Duy Mạnh",male,3.6,10,PC10,Máy-10
+HS36-11,"Nguyễn Văn Hoài Nam",male,3.6,11,PC11,Máy-11
+HS36-12,"Dương Bảo Ngân",female,3.6,12,PC12,Máy-12
+HS36-13,"Phùng Thị Khánh Ngân",female,3.6,13,PC13,Máy-13
+HS36-14,"Huỳnh Thiện Nhân",male,3.6,14,PC14,Máy-14
+HS36-15,"Bùi Tấn Anh Nhật",male,3.6,15,PC15,Máy-15
+HS36-16,"Bùi Thái Quỳnh Như",female,3.6,16,PC16,Máy-16
+HS36-17,"Lê Khắc Trung Quân",male,3.6,17,PC17,Máy-17
+HS36-18,"Đặng Quang Sang",male,3.6,18,PC18,Máy-18
+HS36-19,"Bùi Quốc Thiên",male,3.6,19,PC19,Máy-19
+HS36-20,"Nguyễn Tấn Thiện",male,3.6,20,PC20,Máy-20
+HS36-21,"Đặng Tấn Trung",male,3.6,21,PC01,Máy-01
+HS36-22,"Lê Thị Nhã Uyên",female,3.6,22,PC02,Máy-02
+HS36-23,"Trần Tú Uyên",female,3.6,23,PC03,Máy-03
+HS54-01,"Trần Khánh An",female,5.4,1,PC01,Máy-01
+HS54-02,"Cao Thanh Bình",male,5.4,2,PC02,Máy-02
+HS54-03,"Trịnh Trần Phương Chi",female,5.4,3,PC03,Máy-03
+HS54-04,"Phan Bảo Duy",male,5.4,4,PC04,Máy-04
+HS54-05,"Nguyễn Thị Mỹ Hạnh",female,5.4,5,PC05,Máy-05
+HS54-06,"Huỳnh Duy Trung Hiếu",male,5.4,6,PC06,Máy-06
+HS54-07,"Phạm Đoàn Gia Huy",male,5.4,7,PC07,Máy-07
+HS54-08,"Trần Bảo Huy",male,5.4,8,PC08,Máy-08
+HS54-09,"Lại Khánh Huyền",female,5.4,9,PC09,Máy-09
+HS54-10,"Lê Viết Trọng Khanh",male,5.4,10,PC10,Máy-10
+HS54-11,"Trương Anh Khoa",male,5.4,11,PC11,Máy-11
+HS54-12,"Trương Tấn Lâm",male,5.4,12,PC12,Máy-12
+HS54-13,"Phan Trương Gia Linh",female,5.4,13,PC13,Máy-13
+HS54-14,"Lê Trịnh Khánh Ly",female,5.4,14,PC14,Máy-14
+HS54-15,"Nguyễn Hoàng Minh",male,5.4,15,PC15,Máy-15
+HS54-16,"Nguyễn Thị Huyền My",female,5.4,16,PC16,Máy-16
+HS54-17,"Trương Hiểu My",female,5.4,17,PC17,Máy-17
+HS54-18,"Dương Huỳnh Thu Ngân",female,5.4,18,PC18,Máy-18
+HS54-19,"Nguyễn Vũ Uyên Nhi",female,5.4,19,PC19,Máy-19
+HS54-20,"Trần Lưu Tiết Nhi",female,5.4,20,PC20,Máy-20
+HS54-21,"Võ Nguyễn Bảo Nhi",female,5.4,21,PC01,Máy-01
+HS54-22,"Lê Hạo Nhiên",male,5.4,22,PC02,Máy-02
+HS54-23,"Nguyễn Thảo Như",female,5.4,23,PC03,Máy-03
+HS54-24,"Lê Tấn Nhật Phát",male,5.4,24,PC04,Máy-04
+HS54-25,"Nguyễn Thị Thanh Phúc",female,5.4,25,PC05,Máy-05
+HS54-26,"Nguyễn Mạnh Quân",male,5.4,26,PC06,Máy-06
+HS54-27,"Nguyễn Lê Ngọc Thuận",female,5.4,27,PC07,Máy-07
+HS54-28,"Lê Thị Thu Thủy",female,5.4,28,PC08,Máy-08
+HS54-29,"Nguyễn Hà Anh Thư",female,5.4,29,PC09,Máy-09
+HS54-30,"Nguyễn Dương Bảo Thy",male,5.4,30,PC10,Máy-10
+HS54-31,"Nguyễn Thị Bảo Trâm",female,5.4,31,PC11,Máy-11
+HS54-32,"Nguyễn Tấn Phi Trường",male,5.4,32,PC12,Máy-12
+HS54-33,"Đặng Quốc Việt",male,5.4,33,PC13,Máy-13
+HS34-34,"Trương Thị Tố Uyên",female,5.5,34,PC14,Máy-14
+HS35-35,"Trịnh Thị Như Ý",female,5.4,35,PC15,Máy-15

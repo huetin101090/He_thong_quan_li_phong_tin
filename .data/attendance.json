@@ -29,5 +29,52 @@
     "loginTimestamp": "16:40:23 16/10/2026",
     "status": "present_pending_confirm",
     "seatChangeConfirmed": false
+  },
+  "att_HS54-01_2026-10-19_morning_P2": {
+    "id": "att_HS54-01_2026-10-19_morning_P2",
+    "studentId": "HS54-01",
+    "studentCode": "HS54-01",
+    "studentName": "Trần Khánh An",
+    "classId": "5.4",
+    "date": "2026-10-19",
+    "session": "morning",
+    "periodNumber": 2,
+    "assignedPcId": null,
+    "actualPcId": 1,
+    "loginTimestamp": "16:35:54 19/10/2026",
+    "status": "present_pending_confirm",
+    "seatChangeConfirmed": false
+  },
+  "att_HS43-01_2026-10-19_morning_P2": {
+    "id": "att_HS43-01_2026-10-19_morning_P2",
+    "studentId": "HS43-01",
+    "studentCode": "HS43-01",
+    "studentName": "Nguyễn Ngọc Bảo Anh",
+    "classId": "4.3",
+    "date": "2026-10-19",
+    "session": "morning",
+    "periodNumber": 2,
+    "assignedPcId": null,
+    "actualPcId": 1,
+    "loginTimestamp": "18:31:46 19/10/2026",
+    "status": "present_pending_confirm",
+    "seatChangeConfirmed": false
+  },
+  "att_HS43-07_2026-10-22_morning_P2": {
+    "id": "att_HS43-07_2026-10-22_morning_P2",
+    "studentId": "HS43-07",
+    "studentCode": "HS43-07",
+    "studentName": "Trần Văn Hà",
+    "classId": "4.3",
+    "date": "2026-10-22",
+    "session": "morning",
+    "periodNumber": 2,
+    "assignedPcId": 7,
+    "actualPcId": 7,
+    "loginTimestamp": "15:55:26 22/10/2026",
+    "status": "present",
+    "seatChangeConfirmed": false,
+    "verifiedByTeacher": "Cô Nguyễn Thị Huệ",
+    "verifiedAt": "15:56:09 22/10/2026"
   }
 }

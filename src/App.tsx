@@ -40,6 +40,7 @@ import {
   reassignDisplacedStudentsFromBrokenComputers,
   fetchStudentsFromServer
 } from './services/storageService';
+import { fetchStudentsAndClassesFromSupabase } from './services/supabaseDataService';
 import { fetchAttendanceRecords } from './services/attendanceService';
 import { LearningMaterial } from './data/learningMaterials';
 
@@ -57,6 +58,7 @@ import { PrintView } from './components/PrintView';
 import { ClassAttendanceTable } from './components/ClassAttendanceTable';
 import { StudentLoginModal } from './components/StudentLoginModal';
 import { ClassFoldersModal } from './components/ClassFoldersModal';
+import { StudentPortalView } from './components/StudentPortalView';
 
 // New Advanced Modules for Assignment, Grading, Evaluation & AI Feedback
 import { UserRoleBar } from './components/UserRoleBar';
@@ -74,6 +76,7 @@ import { LearningPhotosManager } from './components/LearningPhotosManager';
 import { ParentContactView } from './components/ParentContactView';
 import { DiscussionForumView } from './components/DiscussionForumView';
 import { StudentRosterView } from './components/StudentRosterView';
+import { StudentAccountsManager } from './components/StudentAccountsManager';
 
 import { 
   Monitor, 
@@ -102,11 +105,11 @@ export default function App() {
   // User Session: Teacher vs Student Portal
   const [session, setSession] = useState<UserSession>({
     role: 'teacher',
-    teacherName: 'Cô Nguyễn Thị Huệ (GV Phụ trách Tin học & Công nghệ)',
+    teacherName: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
   });
 
-  // Global active subject: 'all' (Cả 2 môn), 'tin' (Môn Tin học), 'congnghe' (Môn Công nghệ)
-  const [currentSubject, setCurrentSubject] = useState<'all' | 'tin' | 'congnghe'>('all');
+  // Global active subject: strictly 'tin' (Môn Tin học)
+  const [currentSubject, setCurrentSubject] = useState<'all' | 'tin' | 'congnghe'>('tin');
   const [is18FoldersModalOpen, setIs18FoldersModalOpen] = useState<boolean>(false);
 
   // Student workstation identity & login state
@@ -158,9 +161,18 @@ export default function App() {
   const [isPrintOpen, setIsPrintOpen] = useState(false);
   const [isClassRosterDrawerOpen, setIsClassRosterDrawerOpen] = useState(false);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
-
   // Database diagnostic status
   const [dbStatus, setDbStatus] = useState<DatabaseStatus>(() => getDatabaseDiagnosticStatus());
+
+  // Supabase Database Connection State (Chỉ đọc - Read-Only)
+  const [supabaseStatus, setSupabaseStatus] = useState<'loading' | 'connected' | 'error'>('loading');
+  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+  const [supabaseMetadata, setSupabaseMetadata] = useState<{
+    totalFromDb: number;
+    authenticCount: number;
+    excludedMockCount: number;
+    classesCount: number;
+  } | null>(null);
 
   // Show Toast helper
   const showToast = useCallback((text: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -168,18 +180,44 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 4000);
   }, []);
 
-  // Initialize seed data on initial mount
+  // Đọc dữ liệu thật từ Supabase: public.students và public.classes
+  const loadSupabaseData = useCallback(async () => {
+    setSupabaseStatus('loading');
+    setSupabaseError(null);
+    try {
+      const result = await fetchStudentsAndClassesFromSupabase();
+      if (result.success && result.students.length > 0) {
+        setStudents(result.students);
+        setSupabaseStatus('connected');
+        setSupabaseMetadata({
+          totalFromDb: result.totalFromDb,
+          authenticCount: result.authenticCount,
+          excludedMockCount: result.excludedMockCount,
+          classesCount: result.classesCount,
+        });
+      } else {
+        // Yêu cầu 8: Nếu kết nối thất bại, hiển thị thông báo lỗi rõ ràng, KHÔNG tự chuyển sang danh sách giả
+        setSupabaseStatus('error');
+        const errMsg = result.error || 'Không thể đọc dữ liệu học sinh từ Supabase.';
+        setSupabaseError(errMsg);
+        setStudents([]); // KHÔNG dùng danh sách giả!
+        showToast(`Lỗi kết nối Supabase: ${errMsg}`, 'error');
+      }
+    } catch (err: any) {
+      setSupabaseStatus('error');
+      const errMsg = err?.message || 'Lỗi ngoại lệ khi kết nối Supabase';
+      setSupabaseError(errMsg);
+      setStudents([]); // KHÔNG dùng danh sách giả!
+      showToast(`Lỗi kết nối Supabase: ${errMsg}`, 'error');
+    }
+  }, [showToast]);
+
+  // Khởi tạo và nạp dữ liệu thật 249 học sinh từ Supabase
   useEffect(() => {
     seedDefaultAssignmentsIfEmpty(todayStr);
     setDbStatus(getDatabaseDiagnosticStatus());
-
-    // Đồng bộ danh sách học sinh từ Server (bảo toàn khi mở link trên máy khác hoặc đóng/mở lại)
-    fetchStudentsFromServer().then((serverStudents) => {
-      if (serverStudents && serverStudents.length > 0) {
-        setStudents(serverStudents);
-      }
-    });
-  }, [todayStr]);
+    loadSupabaseData();
+  }, [todayStr, loadSupabaseData]);
 
   // Current class info
   const currentClass: ClassInfo = useMemo(() => {
@@ -201,7 +239,10 @@ export default function App() {
   // Map of studentId -> AttendanceRecord
   const attendanceMap = useMemo(() => {
     const map = new Map<string, AttendanceRecord>();
-    attendanceRecords.forEach(r => map.set(r.studentId, r));
+    attendanceRecords.forEach(r => {
+      if (r.studentId) map.set(r.studentId, r);
+      if (r.studentCode) map.set(r.studentCode, r);
+    });
     return map;
   }, [attendanceRecords]);
 
@@ -641,6 +682,39 @@ export default function App() {
     }
   };
 
+  // Student portal handlers
+  const handleStudentLogout = useCallback(() => {
+    setSession({
+      role: 'teacher',
+      teacherName: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
+    });
+    setLastCheckInStatus(null);
+    showToast('Đã đăng xuất khỏi Cổng Học Sinh.', 'info');
+  }, [showToast]);
+
+  const handleSwitchToTeacher = useCallback(async (adminKey: string) => {
+    try {
+      const res = await fetch('/api/auth/teacher-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSession({
+          role: 'teacher',
+          teacherName: data.teacherName || 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
+        });
+        showToast('Xác thực giáo viên thành công! Chuyển về Giao diện Quản lý.', 'success');
+        return { success: true };
+      } else {
+        return { success: false, error: data.error || 'Mật khẩu Giáo viên không chính xác!' };
+      }
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Lỗi kết nối khi xác thực giáo viên!' };
+    }
+  }, [showToast]);
+
   return (
     <div className="min-h-screen bg-slate-100/90 text-slate-900 flex flex-col font-sans p-3 sm:p-5">
       {/* Toast Alert */}
@@ -658,8 +732,18 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Container */}
-      <div className="max-w-7xl w-full mx-auto space-y-3">
+      {/* Dedicated Student Portal vs Teacher Dashboard */}
+      {session.role === 'student' ? (
+        <StudentPortalView
+          session={session}
+          students={students}
+          classes={CLASSES_DATA}
+          currentPcId={currentPcId}
+          onLogout={handleStudentLogout}
+          onSwitchToTeacher={handleSwitchToTeacher}
+        />
+      ) : (
+        <div className="max-w-7xl w-full mx-auto space-y-3">
         
         {/* User Role Bar: Teacher vs Student switch */}
         <UserRoleBar
@@ -668,6 +752,7 @@ export default function App() {
           students={students}
           onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
           onOpenStudentLoginModal={() => setIsStudentLoginOpen(true)}
+          onOpenStudentAccounts={() => setActiveTab('accounts')}
           currentPcId={currentPcId}
           lastCheckInStatus={lastCheckInStatus}
         />
@@ -814,12 +899,16 @@ export default function App() {
               </div>
             )}
 
-            {/* TAB 2: HỌC SINH (Hồ sơ học sinh 9 lớp, 249 học sinh) */}
+            {/* TAB 2: HỌC SINH (Hồ sơ học sinh 9 lớp, 249 học sinh từ Supabase) */}
             {activeTab === 'students' && (
               <StudentRosterView
                 session={session}
                 classes={CLASSES_DATA}
                 students={students}
+                supabaseStatus={supabaseStatus}
+                supabaseError={supabaseError}
+                supabaseMetadata={supabaseMetadata}
+                onRetrySupabase={loadSupabaseData}
                 currentClassId={selectedClassId}
                 selectedSubject={currentSubject}
                 onSelectSubject={setCurrentSubject}
@@ -836,6 +925,19 @@ export default function App() {
                 onUpdateStudents={handleUpdateStudents}
                 onSelectClass={(cid) => {
                   if (cid !== 'all') setSelectedClassId(cid);
+                }}
+              />
+            )}
+
+            {/* TAB 2.1: QUẢN LÝ VÀ XUẤT TÀI KHOẢN HỌC SINH (9 LỚP, 249 HỌC SINH, CẤP MÃ PIN & XUẤT EXCEL) */}
+            {activeTab === 'accounts' && (
+              <StudentAccountsManager
+                session={session}
+                classes={CLASSES_DATA}
+                currentClassId={selectedClassId}
+                onGoToComputers={(cid) => {
+                  if (cid !== 'all') setSelectedClassId(cid);
+                  setActiveTab('computers');
                 }}
               />
             )}
@@ -1041,6 +1143,7 @@ export default function App() {
         </div>
 
       </div>
+      )}
 
       {/* Slide-out Drawer: Danh sách học sinh của lớp đang chọn */}
       {isClassRosterDrawerOpen && (
@@ -1178,9 +1281,9 @@ export default function App() {
       {/* Footer */}
       <footer className="max-w-7xl w-full mx-auto mt-6 py-4 border-t-2 border-blue-200 text-center text-xs text-slate-500">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="font-bold text-blue-900">{SCHOOL_NAME} • Cổng thông tin Tin học & Công nghệ Lớp học số AI</span>
-          <span className="font-semibold text-slate-700">9 Lớp • 18 Thư mục Tin & Công nghệ • 249 Học sinh • 20 Máy tính</span>
-          <span className="text-slate-400">Hệ thống Đánh giá & Học liệu Tiểu học v3.5 • Cô Nguyễn Thị Huệ</span>
+          <span className="font-bold text-blue-900">{SCHOOL_NAME} • Cổng thông tin Môn Tin học Lớp học số AI</span>
+          <span className="font-semibold text-slate-700">9 Lớp • 9 Thư mục Tin học • 249 Học sinh • 20 Máy tính</span>
+          <span className="text-slate-400">Hệ thống Đánh giá & Học liệu Tin học Tiểu học v3.5 • Cô Nguyễn Thị Huệ</span>
         </div>
       </footer>
     </div>
