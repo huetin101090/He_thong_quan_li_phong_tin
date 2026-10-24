@@ -9,6 +9,15 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { createRequire } from 'module';
+
+const requireModule = createRequire(import.meta.url);
+let AUTHENTIC_STUDENTS_JSON: any[] = [];
+try {
+  AUTHENTIC_STUDENTS_JSON = requireModule('./src/data/authenticStudentsData.json');
+} catch (e) {
+  // Will fallback to candidate paths if needed
+}
 
 dotenv.config();
 
@@ -66,13 +75,22 @@ function isSameClass(c1?: string, c2?: string): boolean {
 }
 
 function generateAllStudents(): any[] {
-  try {
-    const seedFile = path.resolve(__dirname, 'src/data/authenticStudentsData.json');
-    if (fs.existsSync(seedFile)) {
-      return JSON.parse(fs.readFileSync(seedFile, 'utf-8'));
-    }
-  } catch (err) {
-    console.error('Error reading authenticStudentsData.json:', err);
+  if (Array.isArray(AUTHENTIC_STUDENTS_JSON) && AUTHENTIC_STUDENTS_JSON.length > 0) {
+    return JSON.parse(JSON.stringify(AUTHENTIC_STUDENTS_JSON));
+  }
+  const candidatePaths = [
+    path.resolve(__dirname, 'src/data/authenticStudentsData.json'),
+    path.resolve(process.cwd(), 'src/data/authenticStudentsData.json'),
+    path.resolve(__dirname, 'src/data/initialMasterData/students.json'),
+    path.resolve(process.cwd(), 'src/data/initialMasterData/students.json'),
+  ];
+  for (const p of candidatePaths) {
+    try {
+      if (fs.existsSync(p)) {
+        const parsed = JSON.parse(fs.readFileSync(p, 'utf-8'));
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
   }
   return [];
 }
@@ -510,26 +528,39 @@ export interface StoredAttendanceRecord {
   verifiedAt?: string;
 }
 
-// Helper to read JSON file safely
+const inMemoryCache = new Map<string, any>();
+
+// Helper to read JSON file safely with in-memory fallback for Vercel
 function readJsonFile<T>(filePath: string, fallback: T): T {
   try {
     if (fs.existsSync(filePath)) {
       const data = fs.readFileSync(filePath, 'utf-8');
-      return JSON.parse(data) as T;
+      const parsed = JSON.parse(data) as T;
+      inMemoryCache.set(filePath, parsed);
+      return parsed;
     }
   } catch (err) {
-    console.error(`Error reading ${filePath}:`, err);
+    // Non-fatal
   }
+  if (inMemoryCache.has(filePath)) {
+    return inMemoryCache.get(filePath) as T;
+  }
+  inMemoryCache.set(filePath, fallback);
   return fallback;
 }
 
-// Helper to write JSON file safely
+// Helper to write JSON file safely (updates in-memory cache and writes to writable FS)
 function writeJsonFile<T>(filePath: string, data: T): boolean {
+  inMemoryCache.set(filePath, data);
   try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
     return true;
   } catch (err) {
-    console.error(`Error writing ${filePath}:`, err);
+    // In Vercel serverless read-only filesystem (EROFS), in-memory cache holds state
     return false;
   }
 }
@@ -809,6 +840,108 @@ app.get('/api/classroom/students', (_req: Request, res: Response) => {
   return res.json({ success: true, count: students.length, students });
 });
 
+// 5.0.0 Resilient Supabase Students proxy endpoint (Handles Vercel missing frontend env vars or RLS issues)
+app.get('/api/supabase/students', async (_req: Request, res: Response) => {
+  const allowedClasses = ['3/4', '3/5', '3/6', '4/3', '4/4', '4/5', '5/4', '5/5', '5/6'];
+
+  if (supabaseAdmin) {
+    try {
+      const { data: dbStudents, error: stErr } = await supabaseAdmin
+        .from('students')
+        .select('*')
+        .order('id', { ascending: true });
+
+      const { data: dbClasses } = await supabaseAdmin
+        .from('classes')
+        .select('*');
+
+      if (!stErr && Array.isArray(dbStudents) && dbStudents.length > 0) {
+        // Filter 249 authentic students (exclude mock 101-112 and HS4A)
+        const authentic = dbStudents.filter((row: any) => {
+          if (row.id >= 101 && row.id <= 112) return false;
+          if (typeof row.code === 'string' && row.code.toUpperCase().startsWith('HS4A')) return false;
+          if (row.class_id === 1 && typeof row.code === 'string' && row.code.startsWith('HS4A')) return false;
+          const match = (row.code || '').trim().match(/^HS([3-5])([3-6])/i);
+          if (!match) return false;
+          const cls = `${match[1]}/${match[2]}`;
+          return allowedClasses.includes(cls);
+        });
+
+        if (authentic.length > 0) {
+          return res.json({
+            success: true,
+            source: 'supabase',
+            students: authentic,
+            totalFromDb: dbStudents.length,
+            authenticCount: authentic.length,
+            classesCount: Array.isArray(dbClasses) ? dbClasses.length : 0,
+            classes: dbClasses || [],
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
+    } catch (err: any) {
+      console.warn('[Server Supabase Students] Error querying Supabase:', err?.message || err);
+    }
+  }
+
+  // Fallback to 249 authentic students memory seed
+  const masterStudents = generateAllStudents();
+  return res.json({
+    success: true,
+    source: 'master_fallback',
+    students: masterStudents,
+    totalFromDb: masterStudents.length,
+    authenticCount: masterStudents.length,
+    classesCount: 9,
+    classes: CLASSES_DATA,
+    note: supabaseAdmin ? 'Supabase trống hoặc chưa phản hồi, nạp danh sách 249 học sinh chính thức.' : 'Chưa cấu hình Supabase Server Role, sử dụng danh sách 249 học sinh chính thức.',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Environment & Diagnostic Health Check API
+app.get('/api/system/environment-check', async (_req: Request, res: Response) => {
+  const isVercel = Boolean(process.env.VERCEL || process.env.VERCEL_ENV || process.env.NOW_REGION);
+  const hasSupabaseUrl = Boolean(SUPABASE_URL);
+  const hasServiceRole = Boolean(SUPABASE_SERVICE_ROLE_KEY);
+  const hasAnonKey = Boolean(process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY);
+  const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'MY_GEMINI_API_KEY');
+  const hasTeacherKey = Boolean(process.env.TEACHER_ADMIN_KEY);
+
+  let supabaseLiveStatus = 'not_configured';
+  let supabaseStudentCount = 0;
+  if (supabaseAdmin) {
+    try {
+      const { count, error } = await supabaseAdmin.from('students').select('*', { count: 'exact', head: true });
+      if (!error) {
+        supabaseLiveStatus = 'connected';
+        supabaseStudentCount = count || 0;
+      } else {
+        supabaseLiveStatus = `error: ${error.message}`;
+      }
+    } catch (e: any) {
+      supabaseLiveStatus = `exception: ${e?.message || e}`;
+    }
+  }
+
+  return res.json({
+    success: true,
+    environment: isVercel ? 'Vercel Serverless' : 'Google AI Studio / Node.js',
+    timestamp: new Date().toISOString(),
+    envVariables: {
+      VITE_SUPABASE_URL: hasSupabaseUrl ? 'configured' : 'missing',
+      VITE_SUPABASE_ANON_KEY: hasAnonKey ? 'configured' : 'missing',
+      SUPABASE_SERVICE_ROLE_KEY: hasServiceRole ? 'configured' : 'missing',
+      GEMINI_API_KEY: hasGeminiKey ? 'configured' : 'missing',
+      TEACHER_ADMIN_KEY: hasTeacherKey ? 'configured' : 'default (DongDuong@2026)',
+    },
+    supabaseStatus: supabaseLiveStatus,
+    supabaseStudentCount,
+    activeStudentsMemory: generateAllStudents().length,
+  });
+});
+
 app.post('/api/classroom/students', requireAuthenticatedTeacher, (req: Request, res: Response) => {
   const { students } = req.body;
   if (!Array.isArray(students)) {
@@ -817,11 +950,13 @@ app.post('/api/classroom/students', requireAuthenticatedTeacher, (req: Request, 
   const success = writeJsonFile(STUDENTS_FILE, students);
   if (success) {
     console.log(`[Storage] Saved ${students.length} students to ${STUDENTS_FILE}`);
-    try {
-      writeJsonFile(path.resolve(MASTER_DATA_DIR, 'students.json'), students);
-      writeJsonFile(path.resolve(__dirname, 'src/data/authenticStudentsData.json'), students);
-    } catch (e) {
-      console.warn('Could not mirror student data to seed files:', e);
+    if (!IS_VERCEL) {
+      try {
+        writeJsonFile(path.resolve(MASTER_DATA_DIR, 'students.json'), students);
+        writeJsonFile(path.resolve(__dirname, 'src/data/authenticStudentsData.json'), students);
+      } catch (e) {
+        console.warn('Could not mirror student data to seed files:', e);
+      }
     }
   }
   return res.json({ success: true, count: students.length, updatedAt: new Date().toISOString() });
@@ -1142,9 +1277,11 @@ app.post('/api/classroom/seating/:classId', (req: Request, res: Response) => {
     updatedAt: now,
   };
   writeJsonFile(classFile, data);
-  try {
-    writeJsonFile(path.resolve(MASTER_DATA_DIR, 'seating', `class_${safeClass}.json`), data);
-  } catch (e) {}
+  if (!IS_VERCEL) {
+    try {
+      writeJsonFile(path.resolve(MASTER_DATA_DIR, 'seating', `class_${safeClass}.json`), data);
+    } catch (e) {}
+  }
 
   if (Array.isArray(brokenComputers)) {
     const cleanList = Array.from(new Set(brokenComputers.map(Number))).filter(n => n >= 1 && n <= 20);

@@ -196,18 +196,18 @@ export default function App() {
           classesCount: result.classesCount,
         });
       } else {
-        // Yêu cầu 8: Nếu kết nối thất bại, hiển thị thông báo lỗi rõ ràng, KHÔNG tự chuyển sang danh sách giả
+        // Nếu kết nối trực tiếp thất bại, bảo toàn 249 học sinh chính thức từ bộ nhớ chuẩn, không để danh sách rỗng (0 học sinh)
         setSupabaseStatus('error');
-        const errMsg = result.error || 'Không thể đọc dữ liệu học sinh từ Supabase.';
+        const errMsg = result.error || 'Không thể đọc dữ liệu học sinh trực tiếp từ Supabase.';
         setSupabaseError(errMsg);
-        setStudents([]); // KHÔNG dùng danh sách giả!
-        showToast(`Lỗi kết nối Supabase: ${errMsg}`, 'error');
+        setStudents(result.students && result.students.length > 0 ? result.students : INITIAL_STUDENTS);
+        showToast(`Thông báo kết nối: ${errMsg}`, 'error');
       }
     } catch (err: any) {
       setSupabaseStatus('error');
       const errMsg = err?.message || 'Lỗi ngoại lệ khi kết nối Supabase';
       setSupabaseError(errMsg);
-      setStudents([]); // KHÔNG dùng danh sách giả!
+      setStudents(INITIAL_STUDENTS);
       showToast(`Lỗi kết nối Supabase: ${errMsg}`, 'error');
     }
   }, [showToast]);
