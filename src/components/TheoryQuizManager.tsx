@@ -266,7 +266,7 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
   const handleExportBackup = () => {
     const data = {
       exportDate: new Date().toISOString(),
-      school: 'Trường Tiểu học Đồng Dương',
+      school: 'TRƯỜNG TIỂU HỌC ĐỒNG DƯƠNG 2',
       manager: 'Cô Nguyễn Thị Huệ (GVQL Tin học)',
       quizzes: getStoredQuizzes(),
       submissions: getStoredQuizSubmissions(),
@@ -2000,7 +2000,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
                 {initialQuiz ? 'Chỉnh Sửa Đề Bài Lý Thuyết' : 'Soạn Đề Kiểm Tra Lý Thuyết Mới'}
               </h3>
               <p className="text-[10px] text-blue-100">
-                Trường Tiểu học Đồng Dương • Đánh giá theo Thông tư 27/2020/TT-BGDĐT
+                TRƯỜNG TIỂU HỌC ĐỒNG DƯƠNG 2 • Đánh giá theo Thông tư 27/2020/TT-BGDĐT
               </p>
             </div>
           </div>
@@ -2594,7 +2594,7 @@ const CreateQuizModal: React.FC<CreateQuizModalProps> = ({
               })}
             </div>
             <p className="text-[10px] text-slate-500 mt-1 italic">
-              * Hệ thống chỉ hiển thị đúng các lớp thuộc Khối {grade} của Trường Tiểu học Đồng Dương ({grade === 3 ? 'Lớp 3/4, 3/5, 3/6' : grade === 4 ? 'Lớp 4/3, 4/4, 4/5' : 'Lớp 5/4, 5/5, 5/6'}).
+              * Hệ thống chỉ hiển thị đúng các lớp thuộc Khối {grade} của TRƯỜNG TIỂU HỌC ĐỒNG DƯƠNG 2 ({grade === 3 ? 'Lớp 3/4, 3/5, 3/6' : grade === 4 ? 'Lớp 4/3, 4/4, 4/5' : 'Lớp 5/4, 5/5, 5/6'}).
             </p>
           </div>
 

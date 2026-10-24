@@ -682,7 +682,7 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
                   <div className="font-black text-slate-800 text-xs">
                     {activeStudent.name} <span className="font-mono text-slate-500 font-normal">({activeStudent.id})</span>
                   </div>
-                  <div className="text-[11px] text-slate-500">Lớp: <strong>{activeStudentClassId}</strong> • Trường Tiểu học Đồng Dương</div>
+                  <div className="text-[11px] text-slate-500">Lớp: <strong>{activeStudentClassId}</strong> • TRƯỜNG TIỂU HỌC ĐỒNG DƯƠNG 2</div>
                 </div>
 
                 {/* Quick switcher inside modal */}

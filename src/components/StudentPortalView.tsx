@@ -21,7 +21,7 @@ import {
   savePracticeSubmission,
   verifyStudentAssignmentAccess
 } from '../services/assignmentService';
-import { isSameClass, canonicalClassId } from '../data/initialData';
+import { isSameClass, canonicalClassId, SCHOOL_NAME } from '../data/initialData';
 import { 
   GraduationCap, 
   BookOpen, 
@@ -387,7 +387,7 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
                 <span className="px-3 py-1 rounded-full text-xs font-black bg-white/20 text-cyan-100 uppercase tracking-wider">
                   Cổng học sinh cá nhân
                 </span>
-                <span className="text-xs text-blue-200">Trường Tiểu học Đồng Dương</span>
+                <span className="text-xs text-blue-200">{SCHOOL_NAME}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mt-1">
                 {session.studentName || 'Học sinh'}
@@ -1174,7 +1174,7 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
               Góc An Toàn Số & Sử Dụng AI Có Trách Nhiệm
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Những điều quan trọng học sinh Tiểu học Đồng Dương cần nhớ khi học Tin học và dùng máy tính.
+              Những điều quan trọng học sinh {SCHOOL_NAME} cần nhớ khi học Tin học và dùng máy tính.
             </p>
           </div>
 

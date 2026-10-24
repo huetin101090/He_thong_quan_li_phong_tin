@@ -153,7 +153,7 @@ export const DataIntegrityModal: React.FC<DataIntegrityModalProps> = ({
           <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50">
             <div className="px-4 py-2.5 bg-slate-100 font-bold text-slate-800 border-b border-slate-200 flex items-center justify-between">
               <span>BẢNG KIỂM TRA ĐỐI CHIẾU TIÊU CHUẨN KỸ THUẬT</span>
-              <span className="text-[10px] text-slate-500 font-normal">Trường TH Đồng Dương</span>
+              <span className="text-[10px] text-slate-500 font-normal">TRƯỜNG TIỂU HỌC ĐỒNG DƯƠNG 2</span>
             </div>
 
             <div className="divide-y divide-slate-200">

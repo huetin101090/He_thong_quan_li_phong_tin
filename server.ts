@@ -1295,7 +1295,7 @@ async function handleStudentLoginAndAttendance(params: {
     return {
       success: false,
       httpStatus: 401,
-      error: `Mã học sinh "${studentCode}" không tồn tại trong danh sách 249 học sinh Trường TH Đồng Dương. Vui lòng kiểm tra lại mã trên thẻ học sinh!`,
+      error: `Mã học sinh "${studentCode}" không tồn tại trong danh sách 249 học sinh Trường TH Đồng Dương 2. Vui lòng kiểm tra lại mã trên thẻ học sinh!`,
     };
   }
 

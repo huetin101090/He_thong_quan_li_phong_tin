@@ -46,7 +46,7 @@ import {
   autoFixStudentGenders, 
   saveStoredStudents 
 } from '../services/storageService';
-import { isSameClass, canonicalClassId, CLASSES_DATA, INITIAL_STUDENTS } from '../data/initialData';
+import { isSameClass, canonicalClassId, CLASSES_DATA, INITIAL_STUDENTS, SCHOOL_NAME } from '../data/initialData';
 
 interface StudentRosterViewProps {
   session: UserSession;
@@ -642,7 +642,7 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
 
   // Restore factory data
   const handleResetToDefault = () => {
-    if (window.confirm('Khôi phục danh sách gốc 249 học sinh cho 9 lớp học của Trường TH Đồng Dương? Các dữ liệu tự thêm hoặc xóa sẽ được hoàn tác về mặc định.')) {
+    if (window.confirm('Khôi phục danh sách gốc 249 học sinh cho 9 lớp học của Trường TH Đồng Dương 2? Các dữ liệu tự thêm hoặc xóa sẽ được hoàn tác về mặc định.')) {
       const defaults = resetStoredStudentsToDefault();
       if (onUpdateStudents) onUpdateStudents(defaults);
       setSelectedStudentIds([]);
@@ -796,7 +796,7 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-500 font-medium mt-0.5">
-              Trường Tiểu học Đồng Dương • <strong>GVQL: Cô Nguyễn Thị Huệ</strong> • Quản lý hồ sơ, chọn nhiều để xóa, tải lên Excel/CSV
+              {SCHOOL_NAME} • <strong>GVQL: Cô Nguyễn Thị Huệ</strong> • Quản lý hồ sơ, chọn nhiều để xóa, tải lên Excel/CSV
             </p>
           </div>
         </div>
@@ -2153,7 +2153,7 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
                   <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wider block">
                     Thông tin Lớp học & Giáo viên
                   </span>
-                  <div><strong>Trường:</strong> Tiểu học Đồng Dương</div>
+                  <div><strong>Trường:</strong> {SCHOOL_NAME}</div>
                   <div><strong>Lớp:</strong> {selectedStudentForModal.classId}</div>
                   <div><strong>GV Chủ nhiệm:</strong> {classes.find(c => c.id === selectedStudentForModal.classId)?.homeroomTeacher || 'Chưa cập nhật'}</div>
                   <div><strong>GV Quản lý Tin học:</strong> <span className="text-blue-900 font-bold">Cô Nguyễn Thị Huệ</span></div>
@@ -2502,7 +2502,7 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
                   <div className="italic text-slate-500">(Ký và ghi rõ họ tên)</div>
                 </div>
                 <div className="text-center">
-                  <div className="italic text-slate-500">Đồng Dương, ngày {new Date().toLocaleDateString('vi-VN')}</div>
+                  <div className="italic text-slate-500">Đồng Dương 2, ngày {new Date().toLocaleDateString('vi-VN')}</div>
                   <div className="font-bold uppercase mt-1">GIÁO VIÊN BỘ MÔN TIN HỌC</div>
                   <div className="font-black text-blue-900 mt-12">Cô Nguyễn Thị Huệ</div>
                 </div>

@@ -1059,7 +1059,7 @@ export const StudentAccountsManager: React.FC<StudentAccountsManagerProps> = ({
                     <div>
                       <span className="font-black text-sm">Toàn trường (9 lớp • 249 học sinh)</span>
                       <p className="text-[11px] text-slate-500 mt-0.5">
-                        Cấp mới mã PIN đồng loạt cho toàn bộ học sinh trường TH Đồng Dương để bàn giao đầu năm học hoặc đầu kỳ.
+                        Cấp mới mã PIN đồng loạt cho toàn bộ học sinh Trường TH Đồng Dương 2 để bàn giao đầu năm học hoặc đầu kỳ.
                       </p>
                     </div>
                   </label>
@@ -1552,7 +1552,7 @@ export const StudentAccountsManager: React.FC<StudentAccountsManagerProps> = ({
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none"
                 />
                 <p className="text-[10px] text-slate-500">
-                  * Mật khẩu mặc định hệ thống cho Trường TH Đồng Dương là <code className="bg-slate-100 px-1 py-0.5 rounded font-mono font-bold text-blue-900">DongDuong@2026</code> (hoặc cấu hình qua biến môi trường <code className="font-mono">TEACHER_ADMIN_KEY</code>).
+                  * Mật khẩu mặc định hệ thống cho Trường TH Đồng Dương 2 là <code className="bg-slate-100 px-1 py-0.5 rounded font-mono font-bold text-blue-900">DongDuong@2026</code> (hoặc cấu hình qua biến môi trường <code className="font-mono">TEACHER_ADMIN_KEY</code>).
                 </p>
               </div>
 

@@ -1,6 +1,6 @@
 import { ClassInfo, Student, Gender } from '../types/classroom';
 
-export const SCHOOL_NAME = 'Trường Tiểu học Đồng Dương';
+export const SCHOOL_NAME = 'TRƯỜNG TIỂU HỌC ĐỒNG DƯƠNG 2';
 export const APP_NAME = 'LỚP HỌC SỐ THÔNG MINH – SMART ICT CLASSROOM AI';
 export const TOTAL_COMPUTERS = 20;
 

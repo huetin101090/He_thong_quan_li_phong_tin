@@ -212,7 +212,7 @@ export const ComputerGrid: React.FC<ComputerGridProps> = ({
               BẢNG TƯƠNG TÁC THÔNG MINH & BÀN GIÁO VIÊN
             </h3>
             <p className="text-[11px] text-slate-300">
-              Phòng Tin học Tiểu học Đồng Dương • Hướng nhìn xuống học sinh (Tối đa 2 HS / máy)
+              Phòng Tin học Tiểu học Đồng Dương 2 • Hướng nhìn xuống học sinh (Tối đa 2 HS / máy)
             </p>
           </div>
         </div>

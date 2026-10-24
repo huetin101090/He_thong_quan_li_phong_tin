@@ -247,58 +247,29 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                   <span>GV</span>
                 </button>
 
-                {/* YÊU CẦU 1: Nút HS 4/3 - Khi nhấn chuyển đến giao diện CỔNG ĐĂNG NHẬP HỌC SINH */}
+                {/* Nút Đăng nhập Học sinh: Chỉ có nội dung HỌC SINH (không còn HS 4/3) */}
                 <button
                   type="button"
-                  data-testid="student-login-btn-43"
+                  data-testid="student-login-btn"
                   onClick={() => {
                     try {
-                      if (onSelectClass) {
-                        onSelectClass('4/3');
-                      }
                       if (onOpenStudentLoginModal) {
-                        onOpenStudentLoginModal('4/3');
+                        onOpenStudentLoginModal(currentClassId);
                       }
                     } catch (e: any) {
-                      console.error('Lỗi khi mở Cổng đăng nhập HS 4/3:', e);
+                      console.error('Lỗi khi mở Cổng đăng nhập Học sinh:', e);
                     }
                   }}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                    session.role === 'student' && session.classId === '4/3' && session.studentId !== 'PH-01'
+                  className={`px-3 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                    session.role === 'student' && session.studentId !== 'PH-01'
                       ? 'bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-300'
                       : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-400 shadow-2xs'
                   }`}
-                  title="Mở Cổng đăng nhập & Điểm danh học sinh Lớp 4/3 (Ví dụ HS43-07 Phan Hải Đăng)"
+                  title="Mở Cổng đăng nhập & Điểm danh Học sinh"
                 >
                   <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>HS 4/3</span>
-                  <span className="text-[9px] bg-emerald-200/90 text-emerald-950 font-bold px-1.5 py-0.2 rounded font-mono">Đăng nhập</span>
+                  <span>HỌC SINH</span>
                 </button>
-
-                {/* Nếu lớp đang chọn không phải 4/3 (ví dụ 3/4, 4/5, 5/4), hiển thị thêm nút Cổng HS cho lớp đó */}
-                {currentClassId && currentClassId !== '4/3' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      try {
-                        if (onOpenStudentLoginModal) {
-                          onOpenStudentLoginModal(currentClassId);
-                        }
-                      } catch (e: any) {
-                        console.error('Lỗi khi mở Cổng đăng nhập học sinh:', e);
-                      }
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1.5 ${
-                      session.role === 'student' && session.classId === currentClassId && session.studentId !== 'PH-01'
-                        ? 'bg-teal-600 text-white shadow-xs ring-2 ring-teal-300'
-                        : 'bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-300'
-                    }`}
-                    title={`Mở Cổng đăng nhập học sinh Lớp ${currentClassId}`}
-                  >
-                    <GraduationCap className="w-3.5 h-3.5 text-teal-600" />
-                    <span>HS {currentClassId}</span>
-                  </button>
-                )}
 
                 <button
                   type="button"
@@ -326,7 +297,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 onError={(e) => {
                   e.currentTarget.src = '/images/classroom_hero.png';
                 }}
-                alt="Tiết học Tin học Cô Nguyễn Thị Huệ và các em học sinh - Trường TH Đồng Dương"
+                alt="Tiết học Tin học Cô Nguyễn Thị Huệ và các em học sinh - TRƯỜNG TIỂU HỌC ĐỒNG DƯƠNG 2"
                 className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
               />
 
