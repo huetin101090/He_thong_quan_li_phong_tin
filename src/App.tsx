@@ -59,6 +59,7 @@ import { ClassAttendanceTable } from './components/ClassAttendanceTable';
 import { StudentLoginModal } from './components/StudentLoginModal';
 import { ClassFoldersModal } from './components/ClassFoldersModal';
 import { StudentPortalView } from './components/StudentPortalView';
+import { AssignExerciseModal } from './components/AssignExerciseModal';
 
 // New Advanced Modules for Assignment, Grading, Evaluation & AI Feedback
 import { UserRoleBar } from './components/UserRoleBar';
@@ -161,6 +162,7 @@ export default function App() {
   const [isPrintOpen, setIsPrintOpen] = useState(false);
   const [isClassRosterDrawerOpen, setIsClassRosterDrawerOpen] = useState(false);
   const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+  const [isGlobalAssignModalOpen, setIsGlobalAssignModalOpen] = useState(false);
   // Database diagnostic status
   const [dbStatus, setDbStatus] = useState<DatabaseStatus>(() => getDatabaseDiagnosticStatus());
 
@@ -800,6 +802,7 @@ export default function App() {
           selectedSubject={currentSubject}
           onSelectSubject={setCurrentSubject}
           onOpen18FoldersModal={() => setIs18FoldersModalOpen(true)}
+          onOpenAssignModal={() => setIsGlobalAssignModalOpen(true)}
         />
 
         {/* 3. TWO-COLUMN MAIN BODY (Left: Menu dọc | Right: Content Grid as drawn in mauweb.jpg) */}
@@ -1275,6 +1278,20 @@ export default function App() {
         onOpenRoster={() => {
           setIs18FoldersModalOpen(false);
           setActiveTab('students');
+        }}
+      />
+
+      {/* Global Assign Exercise Modal (Giao bài tập cho lớp và học sinh) */}
+      <AssignExerciseModal
+        isOpen={isGlobalAssignModalOpen}
+        onClose={() => setIsGlobalAssignModalOpen(false)}
+        session={session}
+        classes={CLASSES_DATA}
+        students={students}
+        currentClassId={selectedClassId}
+        onShowToast={(msg) => showToast(msg.text, msg.type)}
+        onAssignmentSaved={() => {
+          showToast('Đã lưu và cập nhật trạng thái phân công bài tập!', 'success');
         }}
       />
 

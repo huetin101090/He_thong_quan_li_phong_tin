@@ -17,6 +17,7 @@ import {
   saveMonthlyEvaluation,
   generateMonthlySummaryForStudent
 } from '../services/assignmentService';
+import { isSameClass } from '../data/initialData';
 import { 
   Sparkles, 
   Calendar, 
@@ -67,11 +68,11 @@ export const MonthlyEvaluationManager: React.FC<MonthlyEvaluationManagerProps> =
 
   const isTeacher = session.role === 'teacher';
   const effectiveClassId = !isTeacher && session.classId ? session.classId : selectedClassId;
-  const rawClassStudents = students.filter(s => s.classId === effectiveClassId);
+  const rawClassStudents = students.filter(s => isSameClass(s.classId, effectiveClassId));
   const classStudents = !isTeacher && session.studentId 
     ? rawClassStudents.filter(s => s.id === session.studentId)
     : rawClassStudents;
-  const currentClassInfo = classes.find(c => c.id === effectiveClassId) || classes[0];
+  const currentClassInfo = classes.find(c => isSameClass(c.id, effectiveClassId)) || classes[0];
 
   // Synthesize student progress for selected class and month
   const synthesizedList = classStudents.map((st) => {
@@ -89,8 +90,8 @@ export const MonthlyEvaluationManager: React.FC<MonthlyEvaluationManagerProps> =
     const allScores = [...qScores, ...pScores];
     const avg = allScores.length > 0 ? allScores.reduce((a, b) => a + b, 0) / allScores.length : 8.5;
 
-    const quizzesTotal = quizzes.filter(q => q.targetClassIds.includes(st.classId)).length || 1;
-    const practiceTotal = practiceAssignments.filter(p => p.targetClassIds.includes(st.classId)).length || 1;
+    const quizzesTotal = quizzes.filter(q => q.targetClassIds.some(cid => isSameClass(cid, st.classId))).length || 1;
+    const practiceTotal = practiceAssignments.filter(p => p.targetClassIds.some(cid => isSameClass(cid, st.classId))).length || 1;
 
     if (existing) {
       return existing;
@@ -136,6 +137,18 @@ export const MonthlyEvaluationManager: React.FC<MonthlyEvaluationManagerProps> =
     saveMonthlyEvaluation(updated);
     setEvaluations(getStoredMonthlyEvaluations());
     setEditingStudentId(null);
+
+    // Sync to Supabase assessments table in background
+    fetch('/api/teacher/save-assessment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentCode: target.studentId,
+        term: `monthly_${selectedMonth}_${selectedYear}`,
+        score: target.averageScore,
+        comment: newComment,
+      }),
+    }).catch(() => {});
   };
 
   // Generate Gemini AI comments for all students in class
@@ -163,6 +176,18 @@ export const MonthlyEvaluationManager: React.FC<MonthlyEvaluationManagerProps> =
         isApproved: true,
       };
       saveMonthlyEvaluation(updated);
+
+      // Sync to Supabase assessments table in background
+      fetch('/api/teacher/save-assessment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentCode: item.studentId,
+          term: `monthly_${selectedMonth}_${selectedYear}`,
+          score: item.averageScore,
+          comment: summary,
+        }),
+      }).catch(() => {});
     }
 
     setEvaluations(getStoredMonthlyEvaluations());

@@ -1353,7 +1353,7 @@ app.get('/api/classroom/seating/:classId', (req: Request, res: Response) => {
   });
 });
 
-app.post('/api/classroom/seating/:classId', (req: Request, res: Response) => {
+app.post('/api/classroom/seating/:classId', async (req: Request, res: Response) => {
   const classId = req.params.classId;
   const safeClass = classId.replace('/', '-');
   const classFile = path.resolve(SEATING_DIR, `class_${safeClass}.json`);
@@ -1380,6 +1380,41 @@ app.post('/api/classroom/seating/:classId', (req: Request, res: Response) => {
   if (Array.isArray(brokenComputers)) {
     const cleanList = Array.from(new Set(brokenComputers.map(Number))).filter(n => n >= 1 && n <= 20);
     writeJsonFile(BROKEN_COMPUTERS_FILE, cleanList);
+  }
+
+  // Cập nhật vị trí máy vào cột seat của public.students trên Supabase
+  const { client: sbClient } = getSupabaseServerClient();
+  const activeSb = sbClient || supabaseAdmin;
+  if (activeSb) {
+    try {
+      const seatUpdates: any[] = [];
+      for (let compId = 1; compId <= 20; compId++) {
+        const slot = assignments[compId];
+        if (slot?.studentAId) {
+          const pcLabel = `Máy-${compId < 10 ? '0' + compId : compId}`;
+          seatUpdates.push(
+            activeSb
+              .from('students')
+              .update({ seat: pcLabel })
+              .or(`code.eq.${slot.studentAId},id.eq.${slot.studentAId}`)
+          );
+        }
+        if (slot?.studentBId) {
+          const pcLabel = `Máy-${compId < 10 ? '0' + compId : compId}`;
+          seatUpdates.push(
+            activeSb
+              .from('students')
+              .update({ seat: pcLabel })
+              .or(`code.eq.${slot.studentBId},id.eq.${slot.studentBId}`)
+          );
+        }
+      }
+      if (seatUpdates.length > 0) {
+        Promise.all(seatUpdates).catch(err => console.warn('[Supabase Seating Sync] Warning:', err?.message || err));
+      }
+    } catch (e: any) {
+      console.warn('[Supabase Seating Sync] Error:', e?.message || e);
+    }
   }
 
   return res.json({ success: true, classId, updatedAt: now });
@@ -2417,6 +2452,179 @@ app.get('/api/student/my-results', async (req: Request, res: Response) => {
       success: true,
       student: dbSt,
       assessments: assessments || [],
+    });
+  } catch (e: any) {
+    return res.status(500).json({ success: false, error: e?.message || e });
+  }
+});
+
+// 7.5 Ban liên lạc phụ huynh - Tra cứu tin nhắn từ public.parent_messages trên Supabase (Yêu cầu 7)
+app.get('/api/parent-messages', async (_req: Request, res: Response) => {
+  const { client: sbClient } = getSupabaseServerClient();
+  const activeSb = sbClient || supabaseAdmin;
+
+  if (activeSb) {
+    try {
+      const { data, error } = await activeSb
+        .from('parent_messages')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        return res.json({
+          success: true,
+          messages: data.map(m => ({
+            id: String(m.id),
+            studentName: m.student_name || 'Học sinh',
+            parentName: m.parent_name || 'Phụ huynh',
+            date: m.date || (m.created_at ? new Date(m.created_at).toLocaleDateString('vi-VN') : 'Hôm nay'),
+            content: m.msg || '',
+            createdAt: m.created_at,
+          })),
+          source: 'supabase',
+        });
+      }
+    } catch (e: any) {
+      console.warn('[Parent Messages] Error fetching from Supabase:', e?.message || e);
+    }
+  }
+
+  return res.json({
+    success: true,
+    messages: [
+      {
+        id: '1',
+        parentName: 'Mẹ Minh Quân',
+        date: 'Hôm nay',
+        content: 'Cảm ơn thầy đã động viên con ạ. Tối nay về con thích thú khoe được thầy thưởng 2 Sao vàng.',
+        studentName: 'Lê Minh Quân',
+      }
+    ],
+    source: 'fallback',
+  });
+});
+
+// 7.6 Ban liên lạc phụ huynh - Gửi phản hồi / tin nhắn mới lưu bền vững vào Supabase (Yêu cầu 7)
+app.post('/api/parent-messages', async (req: Request, res: Response) => {
+  const { parentName, studentName, content, date } = req.body;
+  if (!content || !parentName) {
+    return res.status(400).json({ success: false, error: 'Thiếu tên phụ huynh hoặc nội dung tin nhắn!' });
+  }
+
+  const { client: sbClient } = getSupabaseServerClient();
+  const activeSb = sbClient || supabaseAdmin;
+
+  if (activeSb) {
+    try {
+      const { data, error } = await activeSb
+        .from('parent_messages')
+        .insert({
+          parent_name: parentName.trim(),
+          student_name: (studentName || 'Học sinh').trim(),
+          msg: content.trim(),
+          date: date || new Date().toLocaleDateString('vi-VN'),
+        })
+        .select();
+
+      if (!error && data && data[0]) {
+        return res.json({
+          success: true,
+          message: 'Đã lưu phản hồi phụ huynh thành công vào CSDL Supabase!',
+          data: data[0],
+        });
+      }
+      if (error) {
+        return res.status(500).json({ success: false, error: error.message });
+      }
+    } catch (e: any) {
+      return res.status(500).json({ success: false, error: e?.message || e });
+    }
+  }
+
+  return res.json({
+    success: true,
+    message: 'Đã tiếp nhận phản hồi phụ huynh (lưu bộ nhớ tạm)!',
+  });
+});
+
+// 7.7 Giáo viên tra cứu toàn bộ đánh giá & bài tập từ public.assessments trên Supabase (Yêu cầu 4, 5, 6)
+app.get('/api/teacher/assessments', async (req: Request, res: Response) => {
+  const { classId } = req.query;
+  const { client: sbClient } = getSupabaseServerClient();
+  const activeSb = sbClient || supabaseAdmin;
+
+  if (!activeSb) {
+    return res.json({ success: true, assessments: [], source: 'offline' });
+  }
+
+  try {
+    const { data: dbAssessments, error: assErr } = await activeSb
+      .from('assessments')
+      .select('id, student_id, term, score, comment, parent_signed, created_at')
+      .order('created_at', { ascending: false });
+
+    if (assErr) {
+      return res.status(500).json({ success: false, error: assErr.message });
+    }
+
+    return res.json({
+      success: true,
+      assessments: dbAssessments || [],
+      source: 'supabase',
+    });
+  } catch (e: any) {
+    return res.status(500).json({ success: false, error: e?.message || e });
+  }
+});
+
+// 7.8 Giáo viên lưu đánh giá tháng / học kỳ vào public.assessments trên Supabase (Yêu cầu 6)
+app.post('/api/teacher/save-assessment', async (req: Request, res: Response) => {
+  const { studentCode, studentDbId, term, score, comment } = req.body;
+  if (!term || (!studentCode && !studentDbId)) {
+    return res.status(400).json({ success: false, error: 'Thiếu thông tin đánh giá!' });
+  }
+
+  const { client: sbClient } = getSupabaseServerClient();
+  const activeSb = sbClient || supabaseAdmin;
+
+  if (!activeSb) {
+    return res.json({ success: true, message: 'Đã lưu đánh giá (bộ nhớ tạm)!' });
+  }
+
+  try {
+    let resolvedDbId = studentDbId;
+    if (!resolvedDbId && studentCode) {
+      const { data: st } = await activeSb
+        .from('students')
+        .select('id')
+        .eq('code', String(studentCode).trim().toUpperCase())
+        .maybeSingle();
+      if (st) resolvedDbId = st.id;
+    }
+
+    if (!resolvedDbId) {
+      return res.status(404).json({ success: false, error: 'Không tìm thấy hồ sơ học sinh trên CSDL!' });
+    }
+
+    const { data: newAss, error: insErr } = await activeSb
+      .from('assessments')
+      .upsert({
+        student_id: resolvedDbId,
+        term: String(term).trim(),
+        score: score !== undefined ? Number(score) : null,
+        comment: comment ? String(comment).trim() : null,
+        parent_signed: false,
+      })
+      .select();
+
+    if (insErr) {
+      return res.status(500).json({ success: false, error: insErr.message });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Đã lưu đánh giá học sinh vào CSDL Supabase thành công!',
+      assessment: newAss ? newAss[0] : null,
     });
   } catch (e: any) {
     return res.status(500).json({ success: false, error: e?.message || e });

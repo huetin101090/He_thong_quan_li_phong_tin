@@ -23,6 +23,8 @@ export interface TheoryQuiz {
   grade: 3 | 4 | 5;
   subject?: 'tin' | 'congnghe';
   targetClassIds: string[]; // e.g. ['3.4', '3.5', '3.6']
+  assignedStudentIds?: string[]; // Specific students if targeted
+  teacherInstructions?: string; // Teacher's instructions/notes
   lessonTopic: string;
   timeLimitMinutes: number; // e.g. 15
   maxAttempts: number; // e.g. 2
@@ -68,6 +70,8 @@ export interface PracticeAssignment {
   grade: 3 | 4 | 5;
   subject?: 'tin' | 'congnghe';
   targetClassIds: string[];
+  assignedStudentIds?: string[];
+  teacherInstructions?: string;
   objectives: string; // Mục tiêu bài học
   instructions: string; // Hướng dẫn chi tiết
   allowedFileTypes: ('DOCX' | 'PPTX' | 'PDF' | 'IMAGE')[];
@@ -185,3 +189,21 @@ export interface UserSession {
   classId?: string;
   teacherName?: string;
 }
+
+export interface AssignmentDispatchRecord {
+  id: string;
+  assignmentId: string;
+  assignmentType: 'theory' | 'practice';
+  assignmentTitle: string;
+  grade: 3 | 4 | 5;
+  targetClassIds: string[];
+  assignedStudentIds?: string[];
+  assignedStudentCount: number;
+  deadline: string;
+  maxAttempts?: number;
+  teacherInstructions?: string;
+  assignedBy: string;
+  assignedAt: string;
+  status: 'active' | 'closed';
+}
+

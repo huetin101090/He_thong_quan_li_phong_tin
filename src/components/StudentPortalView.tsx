@@ -140,25 +140,31 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
     loadDashboard();
   }, [studentCode]);
 
-  // Filter Quizzes strictly for this student's class (Requirement 3)
+  // Filter Quizzes strictly for this student's class (or individual targeted students)
   const availableQuizzes = useMemo(() => {
     const all = getStoredQuizzes();
     return all.filter(q => {
       if (q.status === 'closed') return false;
+      if (q.assignedStudentIds && q.assignedStudentIds.length > 0) {
+        return q.assignedStudentIds.includes(studentCode);
+      }
       if (!q.targetClassIds || q.targetClassIds.length === 0) return true;
       return q.targetClassIds.some(cid => isSameClass(cid, studentClassId));
     });
-  }, [studentClassId]);
+  }, [studentClassId, studentCode]);
 
-  // Filter Practice Assignments strictly for this student's class (Requirement 3)
+  // Filter Practice Assignments strictly for this student's class (or individual targeted students)
   const availablePractice = useMemo(() => {
     const all = getStoredPracticeAssignments();
     return all.filter(p => {
       if (p.status === 'closed') return false;
+      if (p.assignedStudentIds && p.assignedStudentIds.length > 0) {
+        return p.assignedStudentIds.includes(studentCode);
+      }
       if (!p.targetClassIds || p.targetClassIds.length === 0) return true;
       return p.targetClassIds.some(cid => isSameClass(cid, studentClassId));
     });
-  }, [studentClassId]);
+  }, [studentClassId, studentCode]);
 
   // Handle Quiz Submission to Supabase
   const handleQuizSubmit = async (e: React.FormEvent) => {

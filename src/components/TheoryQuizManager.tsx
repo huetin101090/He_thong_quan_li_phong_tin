@@ -17,6 +17,7 @@ import {
   resetStudentQuizAttempts,
   deleteQuizSubmission
 } from '../services/assignmentService';
+import { isSameClass } from '../data/initialData';
 import { 
   Plus, 
   CheckCircle2, 
@@ -54,8 +55,10 @@ import {
   RefreshCw,
   FileUp,
   Layers,
-  Loader2
+  Loader2,
+  Send
 } from 'lucide-react';
+import { AssignExerciseModal } from './AssignExerciseModal';
 
 interface TheoryQuizManagerProps {
   session: UserSession;
@@ -96,6 +99,8 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
   const [isCreateQuizOpen, setIsCreateQuizOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState<TheoryQuiz | null>(null);
   const [initialOpenAiMode, setInitialOpenAiMode] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedQuizForAssign, setSelectedQuizForAssign] = useState<TheoryQuiz | null>(null);
   
   // Teacher Class Results View
   const [viewingSubmissionsQuiz, setViewingSubmissionsQuiz] = useState<TheoryQuiz | null>(null);
@@ -222,6 +227,21 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
     saveQuizSubmission(submission);
     const updatedSubs = getStoredQuizSubmissions();
     setSubmissions(updatedSubs);
+
+    // Sync to Supabase assessments table in background
+    fetch('/api/student/submit-quiz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentCode: studentId,
+        quizId: takingQuiz.id,
+        quizTitle: takingQuiz.title,
+        classId,
+        score: submission.finalScore !== null ? submission.finalScore : submission.autoGradedScore,
+        totalQuestions: takingQuiz.questions.length,
+        correctCount: Object.values(questionScores).filter(pts => pts > 0).length,
+      }),
+    }).catch(() => {});
 
     // Open detailed review immediately for student
     setTakingQuiz(null);
@@ -409,6 +429,19 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
           {/* Teacher Create Buttons */}
           {isTeacher && (
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedQuizForAssign(null);
+                  setIsAssignModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-black transition shadow-xs cursor-pointer transform hover:scale-[1.02]"
+                title="Chọn lớp, chọn bài tập và phân công bài tập lý thuyết/thực hành cho học sinh"
+              >
+                <Send className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                <span>🚀 GIAO BÀI TẬP CHO HỌC SINH</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => {
@@ -674,14 +707,28 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
                 {/* Status & Action */}
                 <div className="mt-4 pt-3 border-t border-slate-100">
                   {isTeacher ? (
-                    <div className="flex items-center justify-between gap-2">
-                      <button
-                        onClick={() => setViewingSubmissionsQuiz(quiz)}
-                        className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 flex items-center gap-1.5 cursor-pointer transition shadow-2xs"
-                      >
-                        <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Bảng kết quả ({uniqueStudentsCount} HS đã nộp)</span>
-                      </button>
+                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <button
+                          onClick={() => setViewingSubmissionsQuiz(quiz)}
+                          className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-xl border border-blue-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                        >
+                          <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                          <span>Kết quả ({uniqueStudentsCount} HS)</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setSelectedQuizForAssign(quiz);
+                            setIsAssignModalOpen(true);
+                          }}
+                          className="text-xs font-bold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1.5 rounded-xl border border-emerald-300 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                          title="Giao bài kiểm tra này cho các lớp học"
+                        >
+                          <Send className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Giao bài</span>
+                        </button>
+                      </div>
 
                       <div className="flex items-center gap-1">
                         <button
@@ -689,7 +736,7 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
                             setEditingQuiz(quiz);
                             setIsCreateQuizOpen(true);
                           }}
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer"
                           title="Chỉnh sửa đề thi"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -854,6 +901,23 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
           onSave={handleSaveQuiz}
         />
       )}
+
+      {/* 10. TEACHER MODAL: GIAO BÀI TẬP CHO LỚP & HỌC SINH */}
+      <AssignExerciseModal
+        isOpen={isAssignModalOpen}
+        onClose={() => {
+          setIsAssignModalOpen(false);
+          setSelectedQuizForAssign(null);
+        }}
+        session={session}
+        classes={classes}
+        students={students}
+        currentClassId={currentClassId}
+        initialQuiz={selectedQuizForAssign}
+        onAssignmentSaved={() => {
+          setQuizzes(getStoredQuizzes());
+        }}
+      />
     </div>
   );
 };
@@ -1171,12 +1235,12 @@ const TeacherClassResultsModal: React.FC<TeacherClassResultsModalProps> = ({
 
   // Class info and student roster
   const currentClassStudents = useMemo(() => {
-    return students.filter(s => s.classId === selectedClassId);
+    return students.filter(s => isSameClass(s.classId, selectedClassId));
   }, [students, selectedClassId]);
 
   // Submissions for this quiz in this class
   const classSubmissions = useMemo(() => {
-    return submissions.filter(s => s.quizId === quiz.id && s.classId === selectedClassId);
+    return submissions.filter(s => s.quizId === quiz.id && isSameClass(s.classId, selectedClassId));
   }, [submissions, quiz.id, selectedClassId]);
 
   // Statistics calculation

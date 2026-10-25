@@ -10,6 +10,7 @@ import {
   getStoredQuizSubmissions,
   getStoredPracticeSubmissions
 } from '../services/assignmentService';
+import { isSameClass } from '../data/initialData';
 import { 
   Award, 
   FileSpreadsheet, 
@@ -52,11 +53,11 @@ export const SemesterEvaluationManager: React.FC<SemesterEvaluationManagerProps>
 
   const isTeacher = session.role === 'teacher';
   const effectiveClassId = !isTeacher && session.classId ? session.classId : selectedClassId;
-  const rawClassStudents = students.filter(s => s.classId === effectiveClassId);
+  const rawClassStudents = students.filter(s => isSameClass(s.classId, effectiveClassId));
   const classStudents = !isTeacher && session.studentId 
     ? rawClassStudents.filter(s => s.id === session.studentId)
     : rawClassStudents;
-  const currentClassInfo = classes.find(c => c.id === effectiveClassId) || classes[0];
+  const currentClassInfo = classes.find(c => isSameClass(c.id, effectiveClassId)) || classes[0];
 
   const allQuizSubs = getStoredQuizSubmissions();
   const allPracticeSubs = getStoredPracticeSubmissions();
@@ -133,6 +134,18 @@ export const SemesterEvaluationManager: React.FC<SemesterEvaluationManagerProps>
     saveSemesterEvaluation(updated);
     setEvaluations(getStoredSemesterEvaluations());
     setEditingStudentId(null);
+
+    // Sync to Supabase assessments table in background
+    fetch('/api/teacher/save-assessment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentCode: target.studentId,
+        term: `semester_${selectedSemester}_${selectedSchoolYear}`,
+        score: target.theoryScoreAvg,
+        comment: `[${level}] ${comment}`,
+      }),
+    }).catch(() => {});
   };
 
   const handleExportCSV = () => {

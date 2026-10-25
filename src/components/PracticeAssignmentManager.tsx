@@ -14,6 +14,7 @@ import {
   runAutomatedDocxChecks,
   generateGeminiStudentFeedback
 } from '../services/assignmentService';
+import { isSameClass } from '../data/initialData';
 import { 
   Plus, 
   FileText, 
@@ -39,8 +40,10 @@ import {
   Filter,
   GraduationCap,
   ChevronDown,
-  Info
+  Info,
+  Send
 } from 'lucide-react';
+import { AssignExerciseModal } from './AssignExerciseModal';
 
 interface PracticeAssignmentManagerProps {
   session: UserSession;
@@ -82,6 +85,8 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
   // Modals
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingAssignment, setEditingAssignment] = useState<PracticeAssignment | null>(null);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedPracticeForAssign, setSelectedPracticeForAssign] = useState<PracticeAssignment | null>(null);
   const [viewingSubmissionsAssignment, setViewingSubmissionsAssignment] = useState<PracticeAssignment | null>(null);
   const [gradingSubmission, setGradingSubmission] = useState<PracticeSubmission | null>(null);
 
@@ -105,7 +110,7 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
   const isTeacher = session.role === 'teacher';
 
   // Resolved active student info strictly scoped to current class
-  const classStudents = useMemo(() => students.filter(s => s.classId === currentClassId), [students, currentClassId]);
+  const classStudents = useMemo(() => students.filter(s => isSameClass(s.classId, currentClassId)), [students, currentClassId]);
   const defaultClassStudent = classStudents[0] || students[0];
   const activeStudentId = session.studentId || overrideStudentId || (defaultClassStudent ? defaultClassStudent.id : 'HS45-01');
   const activeStudent = students.find(s => s.id === activeStudentId) || defaultClassStudent || {
@@ -135,7 +140,7 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
     if (!isTeacher) {
       if (activeStudentClassId && a.targetClassIds && a.targetClassIds.length > 0) {
         // If student class matches or if viewing all
-        return a.targetClassIds.includes(activeStudentClassId);
+        return a.targetClassIds.some(c => isSameClass(c, activeStudentClassId));
       }
     }
     return true;
@@ -254,6 +259,22 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
     setSubmissions(updatedSubs);
     setUploadingForAssignment(null);
     setSelectedUploadFile(null);
+
+    // Sync to Supabase assessments table
+    fetch('/api/student/submit-practice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        studentCode: finalStudentId,
+        assignmentId: uploadingForAssignment.id,
+        assignmentTitle: uploadingForAssignment.title,
+        classId: finalClassId,
+        productTitle: fileName,
+        productContent: mockFileText,
+        fileType,
+        score: automatedChecks.totalAwarded ? Math.round((automatedChecks.totalAwarded / automatedChecks.totalPossible) * 10 * 10) / 10 : 9,
+      }),
+    }).catch(() => {});
 
     // Open submission review modal for student immediately so they can verify their submission
     setStudentViewingSub({
@@ -507,16 +528,32 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
           </div>
 
           {isTeacher && (
-            <button
-              onClick={() => {
-                setEditingAssignment(null);
-                setIsCreateOpen(true);
-              }}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Giao dự án sản phẩm số mới</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedPracticeForAssign(null);
+                  setIsAssignModalOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-black transition shadow-xs cursor-pointer transform hover:scale-[1.02]"
+                title="Chọn lớp, chọn bài tập và phân công bài thực hành sản phẩm số cho học sinh"
+              >
+                <Send className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                <span>🚀 GIAO BÀI TẬP CHO HỌC SINH</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingAssignment(null);
+                  setIsCreateOpen(true);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-xs cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Giao dự án mới</span>
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -576,20 +613,34 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
               {/* Action bar */}
               <div className="mt-4 pt-3 border-t border-slate-100">
                 {isTeacher ? (
-                  <div className="flex items-center justify-between">
-                    <button
-                      onClick={() => setViewingSubmissionsAssignment(assign)}
-                      className="text-[11px] font-bold text-blue-600 hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      <UserCheck className="w-3.5 h-3.5" />
-                      <span>Bài nộp ({assignSubs.length} bài • {pendingCount} chờ chấm)</span>
-                    </button>
+                  <div className="flex items-center justify-between gap-1 flex-wrap">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        onClick={() => setViewingSubmissionsAssignment(assign)}
+                        className="text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-xl border border-blue-200 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                      >
+                        <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Bài nộp ({assignSubs.length})</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setSelectedPracticeForAssign(assign);
+                          setIsAssignModalOpen(true);
+                        }}
+                        className="text-xs font-bold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-xl border border-emerald-300 flex items-center gap-1 cursor-pointer transition shadow-2xs"
+                        title="Giao dự án thực hành này cho các lớp học"
+                      >
+                        <Send className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Giao bài</span>
+                      </button>
+                    </div>
 
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleOpenUploadModal(assign)}
                         title="Thử nghiệm nộp bài với tư cách học sinh"
-                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[10px] font-bold cursor-pointer"
+                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold cursor-pointer"
                       >
                         Nộp thử
                       </button>
@@ -1046,6 +1097,23 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
           onSave={handleSaveAssignment}
         />
       )}
+
+      {/* 9. TEACHER MODAL: GIAO BÀI TẬP CHO LỚP & HỌC SINH */}
+      <AssignExerciseModal
+        isOpen={isAssignModalOpen}
+        onClose={() => {
+          setIsAssignModalOpen(false);
+          setSelectedPracticeForAssign(null);
+        }}
+        session={session}
+        classes={classes}
+        students={students}
+        currentClassId={currentClassId}
+        initialPractice={selectedPracticeForAssign}
+        onAssignmentSaved={() => {
+          setAssignments(getStoredPracticeAssignments());
+        }}
+      />
     </div>
   );
 };

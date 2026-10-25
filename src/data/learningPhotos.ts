@@ -5,6 +5,8 @@ export interface LearningPhoto {
   grade: 3 | 4 | 5;
   classId: string; // e.g. '5/4'
   imageUrl: string;
+  mediaType?: 'image' | 'video';
+  videoUrl?: string;
   date: string;
   description: string;
   tags: string[];
@@ -35,6 +37,20 @@ export const INITIAL_LEARNING_PHOTOS: LearningPhoto[] = [
     description: 'Cô Nguyễn Thị Huệ tận tình chỉ dẫn từng bạn học sinh Lớp 4/3 cách đặt tay trên bàn phím, gõ tiếng Việt có dấu và soạn thảo văn bản chuẩn.',
     tags: ['Cô Nguyễn Thị Huệ', 'Lớp 4/3', 'Soạn thảo văn bản', 'Thực hành máy', 'TH Đồng Dương'],
     likes: 68,
+  },
+  {
+    id: 'video-01',
+    title: 'Video ghi lại giờ học thực hành phòng máy 20 máy trạm – Tiết học môn Tin học',
+    category: 'thuc_hanh',
+    grade: 5,
+    classId: '5/4',
+    mediaType: 'video',
+    imageUrl: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200&auto=format&fit=crop',
+    videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    date: '18/10/2026',
+    description: 'Video ngắn ghi lại không khí học tập tích cực, kỷ luật và trật tự của các em học sinh khi thực hành đôi trên 20 máy tính trạm.',
+    tags: ['Video giờ học', 'Phòng máy 20 máy', 'Thực hành Tin học', 'Lớp 5/4'],
+    likes: 58,
   },
   {
     id: 'photo-03',

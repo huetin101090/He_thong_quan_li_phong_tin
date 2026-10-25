@@ -55,7 +55,7 @@ export const DiscussionForumView: React.FC<DiscussionForumViewProps> = ({
       replies: [
         {
           id: 'rep-1',
-          authorName: 'Thầy Nguyễn Hữu Tin',
+          authorName: 'Cô Nguyễn Thị Huệ',
           role: 'teacher',
           content: 'Chào Bảo! Trong Scratch có lệnh "đặt kiểu xoay [trái-phải]". Em ghép lệnh này vào ngay dưới cờ xanh là chú mèo sẽ không bị lộn ngược đầu nữa nhé!',
           date: 'Hôm nay, 08:50',
@@ -82,7 +82,7 @@ export const DiscussionForumView: React.FC<DiscussionForumViewProps> = ({
       replies: [
         {
           id: 'rep-3',
-          authorName: 'Thầy Nguyễn Hữu Tin',
+          authorName: 'Cô Nguyễn Thị Huệ',
           role: 'teacher',
           content: 'Theo kiểu gõ Telex: Gõ đúp aa -> â, ee -> ê, oo -> ô, dd -> đ. Em rèn luyện trên phần mềm Typing Pro sẽ tạo phản xạ tự nhiên rất nhanh nhé.',
           date: 'Hôm qua, 14:35',

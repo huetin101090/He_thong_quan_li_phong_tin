@@ -13,7 +13,8 @@ import {
   Award,
   Gamepad2,
   CalendarCheck,
-  KeyRound
+  KeyRound,
+  Send
 } from 'lucide-react';
 
 export type ActiveViewTab = 
@@ -46,6 +47,7 @@ interface HorizontalNavbarProps {
   selectedSubject?: 'all' | 'tin' | 'congnghe';
   onSelectSubject?: (subject: 'all' | 'tin' | 'congnghe') => void;
   onOpen18FoldersModal?: () => void;
+  onOpenAssignModal?: () => void;
 }
 
 export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
@@ -60,6 +62,7 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
   selectedSubject = 'all',
   onSelectSubject,
   onOpen18FoldersModal,
+  onOpenAssignModal,
 }) => {
   return (
     <nav className="bg-[#1a3a8f] text-white rounded-2xl shadow-lg px-2.5 py-1.5 mb-4 sticky top-2 z-20 border border-blue-600/40">
@@ -120,6 +123,18 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
             <Monitor className="w-3.5 h-3.5 text-cyan-300" />
             <span>20 MÁY TÍNH</span>
           </button>
+
+          {/* GIAO BÀI TẬP CHO LỚP & HỌC SINH */}
+          {onOpenAssignModal && (
+            <button
+              onClick={onOpenAssignModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition whitespace-nowrap cursor-pointer bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-md ring-1 ring-emerald-300 transform hover:scale-[1.02]"
+              title="Chọn lớp, chọn bài tập và phân công bài tập cho học sinh"
+            >
+              <Send className="w-3.5 h-3.5 text-amber-200 animate-pulse" />
+              <span>GIAO BÀI TẬP</span>
+            </button>
+          )}
 
           {/* 4. BÀI TẬP LÝ THUYẾT */}
           <button

@@ -6,7 +6,8 @@ import {
   ExternalResourceLink, 
   MonthlyEvaluation, 
   SemesterEvaluation,
-  AutomatedCheckItem
+  AutomatedCheckItem,
+  AssignmentDispatchRecord
 } from '../types/assignments';
 import { 
   INITIAL_THEORY_QUIZZES, 
@@ -563,4 +564,94 @@ export function saveSemesterEvaluation(evaluation: SemesterEvaluation): void {
     current.unshift(evaluation);
   }
   safeSet(STORAGE_KEY_SEMESTER, current);
+}
+
+// Assignment Dispatches (Lịch sử & Quản lý giao bài tập cho lớp và học sinh)
+const STORAGE_KEY_DISPATCHES = 'smart_ict_assignment_dispatches_v1';
+
+const INITIAL_DISPATCHES: AssignmentDispatchRecord[] = [
+  {
+    id: 'disp-01',
+    assignmentId: 'quiz-3-01',
+    assignmentType: 'theory',
+    assignmentTitle: 'Kiểm tra lý thuyết: Bàn phím máy tính & Hàng phím cơ sở',
+    grade: 3,
+    targetClassIds: ['3.4', '3.5', '3.6'],
+    assignedStudentCount: 85,
+    deadline: '2026-10-25',
+    maxAttempts: 2,
+    teacherInstructions: 'Các em đọc kỹ lý thuyết Chủ đề 1 bài 4 trước khi làm bài. Chú ý tư thế đặt tay đúng trên hàng phím cơ sở.',
+    assignedBy: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
+    assignedAt: '2026-10-18 08:30',
+    status: 'active'
+  },
+  {
+    id: 'disp-02',
+    assignmentId: 'quiz-3-02',
+    assignmentType: 'theory',
+    assignmentTitle: 'Khảo sát lý thuyết: Quy tắc an toàn phòng Tin học (Chỉ giao Lớp 3/5)',
+    grade: 3,
+    targetClassIds: ['3.5'],
+    assignedStudentCount: 31,
+    deadline: '2026-10-27',
+    maxAttempts: 2,
+    teacherInstructions: 'Bài khảo sát nhanh dành riêng cho Lớp 3.5 để củng cố nội quy phòng máy tính sau tuần thực hành đầu tiên.',
+    assignedBy: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
+    assignedAt: '2026-10-20 09:15',
+    status: 'active'
+  },
+  {
+    id: 'disp-03',
+    assignmentId: 'quiz-4-01',
+    assignmentType: 'theory',
+    assignmentTitle: 'Kiểm tra lý thuyết: Soạn thảo văn bản & Chèn hình ảnh (Word)',
+    grade: 4,
+    targetClassIds: ['4.3', '4.4', '4.5'],
+    assignedStudentCount: 76,
+    deadline: '2026-10-28',
+    maxAttempts: 2,
+    teacherInstructions: 'Yêu cầu các em ôn tập cách căn lề, chọn phông chữ Times New Roman/Arial và cách chèn hình ảnh minh họa hợp lý.',
+    assignedBy: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
+    assignedAt: '2026-10-21 14:00',
+    status: 'active'
+  },
+  {
+    id: 'disp-04',
+    assignmentId: 'practice-5-01',
+    assignmentType: 'practice',
+    assignmentTitle: 'Thực hành Lập trình Scratch: Nhân vật di chuyển & Vẽ hình học',
+    grade: 5,
+    targetClassIds: ['5.4', '5.5', '5.6'],
+    assignedStudentCount: 88,
+    deadline: '2026-10-30',
+    teacherInstructions: 'Các em nộp tệp dự án .sb3 hoặc ảnh chụp màn hình khối lệnh hoàn chỉnh. Lưu bài đúng thư mục _TIN HỌC của lớp.',
+    assignedBy: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
+    assignedAt: '2026-10-22 10:00',
+    status: 'active'
+  }
+];
+
+export function getStoredAssignmentDispatches(): AssignmentDispatchRecord[] {
+  const dispatches = safeGet<AssignmentDispatchRecord[]>(STORAGE_KEY_DISPATCHES, []);
+  if (dispatches.length === 0) {
+    safeSet(STORAGE_KEY_DISPATCHES, INITIAL_DISPATCHES);
+    return INITIAL_DISPATCHES;
+  }
+  return dispatches;
+}
+
+export function saveAssignmentDispatch(record: AssignmentDispatchRecord): void {
+  const current = getStoredAssignmentDispatches();
+  const index = current.findIndex(d => d.id === record.id);
+  if (index >= 0) {
+    current[index] = record;
+  } else {
+    current.unshift(record);
+  }
+  safeSet(STORAGE_KEY_DISPATCHES, current);
+}
+
+export function deleteAssignmentDispatch(id: string): void {
+  const current = getStoredAssignmentDispatches().filter(d => d.id !== id);
+  safeSet(STORAGE_KEY_DISPATCHES, current);
 }

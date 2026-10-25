@@ -156,8 +156,21 @@ export const ALL_18_CLASS_FOLDERS: ClassSubjectFolder[] = [
 export const VALID_9_CLASS_IDS = ['3.4', '3.5', '3.6', '4.3', '4.4', '4.5', '5.4', '5.5', '5.6'] as const;
 export type ValidClassId = typeof VALID_9_CLASS_IDS[number];
 
+export const SUPABASE_CLASS_ID_MAP: Record<number, ValidClassId> = {
+  3: '3.5',
+  4: '3.4',
+  10: '3.6',
+  7: '4.3',
+  11: '4.4',
+  9: '4.5',
+  6: '5.4',
+  8: '5.5',
+  5: '5.6',
+};
+
 /**
  * Chuẩn hóa mã lớp: chuyển '3/4' -> '3.4', 'Lớp 3A4' -> '3.4', '3A4' -> '3.4', '_TIN HỌC 3.4' -> '3.4', '_CN4.3' -> '4.3'
+ * Hỗ trợ cả ID số nguyên từ Supabase (3..11) và mã học sinh (HS43-07 -> 4.3)
  * Luôn đảm bảo trả về 1 trong 9 mã lớp chuẩn của trường (3.4, 3.5, 3.6, 4.3, 4.4, 4.5, 5.4, 5.5, 5.6)
  */
 export function canonicalClassId(raw: any, defaultId: string = '3.4'): string {
@@ -166,9 +179,25 @@ export function canonicalClassId(raw: any, defaultId: string = '3.4'): string {
     ? String(defaultId).trim() 
     : '3.4';
 
-  if (!raw) return safeDefault;
+  if (raw === undefined || raw === null || raw === '') return safeDefault;
+
+  // 0. Nếu raw là số hoặc chuỗi số nguyên tương ứng class_id trong CSDL Supabase
+  const num = Number(raw);
+  if (!isNaN(num) && SUPABASE_CLASS_ID_MAP[num]) {
+    return SUPABASE_CLASS_ID_MAP[num];
+  }
+
   const str = String(raw).trim();
   if ((VALID_9_CLASS_IDS as readonly string[]).includes(str)) return str;
+
+  // 0.1 Nếu là mã học sinh như HS43-07, HS34-01, HS54-15...
+  const hsMatch = str.match(/^HS([3-5])([3-6])/i);
+  if (hsMatch) {
+    const candidate = `${hsMatch[1]}.${hsMatch[2]}`;
+    if ((VALID_9_CLASS_IDS as readonly string[]).includes(candidate)) {
+      return candidate;
+    }
+  }
 
   const upper = str.toUpperCase();
   const unaccented = upper
@@ -184,7 +213,7 @@ export function canonicalClassId(raw: any, defaultId: string = '3.4'): string {
     if (cls.aliases && cls.aliases.some(a => a.toUpperCase() === upper || a.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase() === unaccented)) return cls.id;
   }
 
-  // 2. Nhận diện các mẫu như 3A4, 3A5, 3A6, 4A3, 4A4, 4A5, 5A4, 5A5, 5A6, Lớp 3A4, 3-A-4
+  // 2. Nhận diện các mẫu như 3A4, 3A5, 3A6, 4A3, 4A4, 4A5, 5A4, 5A5, 5A6, Lớp 3A4, 3-A-4, 4/3, 5/4
   const matchA = upper.match(/([3-5])\s*[A-Za-zÀ-ỹ\/\.\-_ ]*?\s*([3-6])/);
   if (matchA) {
     const candidate = `${matchA[1]}.${matchA[2]}`;
@@ -211,8 +240,7 @@ export function canonicalClassId(raw: any, defaultId: string = '3.4'): string {
     }
   }
 
-  // 5. Nếu chuỗi là tên sheet mặc định hoặc file không rõ lớp (VD: Sheet1, Trang tính, Danh sách, DSHS, Data...)
-  // Hoặc không khớp bất kỳ lớp nào: LUÔN TRẢ VỀ safeDefault thay vì chuỗi lạ gây lỗi bộ lọc!
+  // 5. Nếu chuỗi không khớp bất kỳ lớp nào: LUÔN TRẢ VỀ safeDefault thay vì chuỗi lạ gây lỗi bộ lọc!
   return safeDefault;
 }
 

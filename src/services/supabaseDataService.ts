@@ -88,13 +88,18 @@ export async function fetchStudentsAndClassesFromSupabase(): Promise<SupabaseFet
             result.totalFromDb = dbStudents.length;
             result.excludedMockCount = dbStudents.length - authenticRows.length;
             result.authenticCount = authenticRows.length;
+            result.classesCount = 9;
+            result.classes = [...CLASSES_DATA];
             result.students = mapRowsToStudents(authenticRows);
             result.success = true;
             return result;
           }
+        } else if (errStudents) {
+          result.error = `Lỗi truy vấn CSDL Supabase: ${errStudents.message}`;
         }
       } catch (clientErr: any) {
         console.warn('[Supabase Client] Truy vấn trực tiếp thất bại, chuyển sang Proxy máy chủ:', clientErr?.message || clientErr);
+        result.error = clientErr?.message || 'Lỗi kết nối Supabase client';
       }
     }
   }
@@ -108,14 +113,15 @@ export async function fetchStudentsAndClassesFromSupabase(): Promise<SupabaseFet
         result.totalFromDb = serverData.totalFromDb || serverData.students.length;
         result.authenticCount = serverData.authenticCount || serverData.students.length;
         result.excludedMockCount = 0;
-        result.classesCount = serverData.classesCount || 9;
+        result.classesCount = 9;
+        result.classes = [...CLASSES_DATA];
         result.students = mapRowsToStudents(serverData.students);
         result.success = true;
         result.error = serverData.note || null;
         return result;
       }
     }
-  } catch (proxyErr) {
+  } catch (proxyErr: any) {
     console.warn('[Supabase Proxy] Không thể kết nối /api/supabase/students:', proxyErr);
   }
 
@@ -134,7 +140,16 @@ function mapRowsToStudents(rows: any[]): Student[] {
   return rows.map((row: any) => {
     const code = String(row.code || '').trim();
     const name = String(row.name || '').trim();
-    const dotClass = canonicalClassId(row.classId || row.class_id || code, '3.4');
+
+    // 1. Nhận diện lớp học chính xác: Ưu tiên tiền tố mã học sinh (VD: HS43-07 -> 4.3, HS54-01 -> 5.4)
+    let dotClass = '';
+    const codeMatch = code.match(/^HS([3-5])([3-6])/i);
+    if (codeMatch) {
+      dotClass = `${codeMatch[1]}.${codeMatch[2]}`;
+    } else {
+      dotClass = canonicalClassId(row.class_id || row.classId || code, '3.4');
+    }
+
     const inferredGender = inferVietnameseGender(name);
     const gender: Gender = (row.gender === 'male' || row.gender === 'female') 
       ? row.gender 
