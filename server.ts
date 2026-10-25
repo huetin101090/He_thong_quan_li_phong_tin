@@ -478,7 +478,14 @@ QUY TẮC BẮT BUỘC (CRITICAL):
 // 5. CLASSROOM SEATING & BROKEN COMPUTERS API
 // ==========================================
 const IS_VERCEL = Boolean(process.env.VERCEL);
-const DATA_DIR = IS_VERCEL ? path.resolve('/tmp', '.data') : path.resolve(__dirname, '.data');
+const IS_SERVERLESS = Boolean(
+  IS_VERCEL || 
+  process.env.NETLIFY || 
+  process.env.AWS_LAMBDA_FUNCTION_NAME || 
+  process.env.LAMBDA_TASK_ROOT || 
+  process.env.SERVERLESS
+);
+const DATA_DIR = IS_SERVERLESS ? path.resolve('/tmp', '.data') : path.resolve(__dirname, '.data');
 const SEATING_DIR = path.resolve(DATA_DIR, 'seating');
 const ATTENDANCE_FILE = path.resolve(DATA_DIR, 'attendance.json');
 const BROKEN_COMPUTERS_FILE = path.resolve(DATA_DIR, 'broken_computers.json');
@@ -1044,7 +1051,7 @@ app.post('/api/classroom/students', requireAuthenticatedTeacher, (req: Request, 
   const success = writeJsonFile(STUDENTS_FILE, students);
   if (success) {
     console.log(`[Storage] Saved ${students.length} students to ${STUDENTS_FILE}`);
-    if (!IS_VERCEL) {
+    if (!IS_SERVERLESS) {
       try {
         writeJsonFile(path.resolve(MASTER_DATA_DIR, 'students.json'), students);
         writeJsonFile(path.resolve(__dirname, 'src/data/authenticStudentsData.json'), students);
@@ -1371,7 +1378,7 @@ app.post('/api/classroom/seating/:classId', async (req: Request, res: Response) 
     updatedAt: now,
   };
   writeJsonFile(classFile, data);
-  if (!IS_VERCEL) {
+  if (!IS_SERVERLESS) {
     try {
       writeJsonFile(path.resolve(MASTER_DATA_DIR, 'seating', `class_${safeClass}.json`), data);
     } catch (e) {}
@@ -1948,13 +1955,14 @@ async function handleStudentLoginAndAttendance(params: {
 
 // 6.3 Student Login & Authentication API (YÊU CẦU 2, 3, 4, 5, 6)
 app.post('/api/auth/student-login', async (req: Request, res: Response) => {
-  const { studentCode, password, pin, pcId, activeClassId, date, session = 'morning', period = 2 } = req.body;
+  const { studentCode, password, pin, pcId, currentPcId, activeClassId, date, session = 'morning', period = 2 } = req.body;
   const enteredPin = (password || pin || '').trim();
+  const targetPcId = pcId !== undefined && pcId !== null ? pcId : currentPcId;
 
   const result = await handleStudentLoginAndAttendance({
     studentCode,
     enteredPin,
-    pcId,
+    pcId: targetPcId,
     activeClassId,
     date,
     session,
@@ -2714,8 +2722,26 @@ async function startServer() {
   });
 }
 
-// Only launch standalone HTTP listener if not running in Vercel Serverless environment
-if (!process.env.VERCEL) {
+// Only launch standalone HTTP listener if not running in Serverless environment (Vercel, Netlify, Lambda)
+// and executed directly as main process (e.g. tsx server.ts or node server.ts)
+const isServerlessRuntime = Boolean(
+  process.env.VERCEL || 
+  process.env.NETLIFY || 
+  process.env.AWS_LAMBDA_FUNCTION_NAME || 
+  process.env.LAMBDA_TASK_ROOT || 
+  process.env.SERVERLESS ||
+  process.env.NODE_ENV === 'test'
+);
+
+const isDirectExecution = Boolean(
+  process.argv[1] && (
+    fileURLToPath(import.meta.url) === path.resolve(process.argv[1]) ||
+    process.argv[1].endsWith('server.ts') ||
+    process.argv[1].endsWith('server.js')
+  )
+);
+
+if (!isServerlessRuntime && isDirectExecution) {
   startServer().catch((err) => {
     console.error('Unhandled error in startServer:', err);
     process.exit(1);

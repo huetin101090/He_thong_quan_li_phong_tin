@@ -106,5 +106,20 @@
     "loginTimestamp": "03:06:49 25/10/2026",
     "status": "present_pending_confirm",
     "seatChangeConfirmed": false
+  },
+  "att_HS43-01_2026-10-25_morning_P2": {
+    "id": "att_HS43-01_2026-10-25_morning_P2",
+    "studentId": "HS43-01",
+    "studentCode": "HS43-01",
+    "studentName": "Nguyễn Ngọc Bảo Anh",
+    "classId": "4.3",
+    "date": "2026-10-25",
+    "session": "morning",
+    "periodNumber": 2,
+    "assignedPcId": 1,
+    "actualPcId": 1,
+    "loginTimestamp": "08:33:13 25/10/2026",
+    "status": "present_pending_confirm",
+    "seatChangeConfirmed": false
   }
 }
