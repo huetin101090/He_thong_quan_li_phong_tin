@@ -76,5 +76,20 @@
     "seatChangeConfirmed": false,
     "verifiedByTeacher": "Cô Nguyễn Thị Huệ",
     "verifiedAt": "15:56:09 22/10/2026"
+  },
+  "att_HS43-07_2026-10-24_morning_P2": {
+    "id": "att_HS43-07_2026-10-24_morning_P2",
+    "studentId": "HS43-07",
+    "studentCode": "HS43-07",
+    "studentName": "Trần Văn Hà",
+    "classId": "4.3",
+    "date": "2026-10-24",
+    "session": "morning",
+    "periodNumber": 2,
+    "assignedPcId": 7,
+    "actualPcId": 7,
+    "loginTimestamp": "05:29:02 24/10/2026",
+    "status": "present_pending_confirm",
+    "seatChangeConfirmed": false
   }
 }

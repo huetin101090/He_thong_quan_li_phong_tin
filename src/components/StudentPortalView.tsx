@@ -46,7 +46,9 @@ import {
   ArrowRight,
   ExternalLink,
   Bot,
-  HeartHandshake
+  HeartHandshake,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 interface StudentPortalViewProps {
@@ -79,6 +81,7 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
   // Teacher unlock modal state
   const [showTeacherAuthModal, setShowTeacherAuthModal] = useState<boolean>(false);
   const [teacherKeyInput, setTeacherKeyInput] = useState<string>('');
+  const [showTeacherKey, setShowTeacherKey] = useState<boolean>(false);
   const [teacherAuthError, setTeacherAuthError] = useState<string | null>(null);
   const [isVerifyingTeacher, setIsVerifyingTeacher] = useState<boolean>(false);
 
@@ -1254,19 +1257,61 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
             )}
 
             <form onSubmit={handleTeacherUnlockSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Mật khẩu Quản trị viên / Giáo viên:
-                </label>
-                <input
-                  type="password"
-                  required
-                  autoFocus
-                  value={teacherKeyInput}
-                  onChange={(e) => setTeacherKeyInput(e.target.value)}
-                  placeholder="Nhập mật khẩu Giáo viên..."
-                  className="w-full p-3 rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 text-sm font-semibold"
-                />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Mật khẩu Quản trị viên / Giáo viên:
+                  </label>
+                  <span className="text-[11px] text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                    Không cần tên tài khoản
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type={showTeacherKey ? "text" : "password"}
+                    required
+                    autoFocus
+                    value={teacherKeyInput}
+                    onChange={(e) => setTeacherKeyInput(e.target.value)}
+                    placeholder="Nhập DongDuong@2026 hoặc admin..."
+                    className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 text-sm font-semibold"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowTeacherKey(!showTeacherKey)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                    title={showTeacherKey ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  >
+                    {showTeacherKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-xl space-y-1.5">
+                  <span className="text-[11px] font-bold text-amber-950 block">⚡ Điền nhanh mật khẩu mặc định:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTeacherKeyInput('DongDuong@2026');
+                        setTeacherAuthError(null);
+                      }}
+                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-lg text-xs cursor-pointer shadow-xs transition"
+                    >
+                      DongDuong@2026 (Chuẩn)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTeacherKeyInput('admin');
+                        setTeacherAuthError(null);
+                      }}
+                      className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-800 font-bold rounded-lg text-xs border border-slate-300 cursor-pointer transition"
+                    >
+                      admin
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">

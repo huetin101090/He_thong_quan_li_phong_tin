@@ -21,7 +21,9 @@ import {
   ChevronDown,
   Info,
   CheckSquare,
-  Square
+  Square,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { UserSession } from '../types/assignments';
 import { ClassInfo } from '../types/classroom';
@@ -57,6 +59,7 @@ export const StudentAccountsManager: React.FC<StudentAccountsManagerProps> = ({
   const [isTeacherAuthenticated, setIsTeacherAuthenticated] = useState<boolean>(() => Boolean(getTeacherToken()));
   const [showTeacherAuthModal, setShowTeacherAuthModal] = useState<boolean>(false);
   const [teacherPasswordInput, setTeacherPasswordInput] = useState<string>('');
+  const [showTeacherPassword, setShowTeacherPassword] = useState<boolean>(false);
   const [teacherAuthError, setTeacherAuthError] = useState<string | null>(null);
   const [isVerifyingTeacher, setIsVerifyingTeacher] = useState<boolean>(false);
 
@@ -1533,27 +1536,88 @@ export const StudentAccountsManager: React.FC<StudentAccountsManagerProps> = ({
               </div>
 
               {teacherAuthError && (
-                <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-900 text-xs font-semibold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{teacherAuthError}</span>
+                <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-900 text-xs font-semibold space-y-1">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{teacherAuthError}</span>
+                  </div>
+                  <p className="text-[11px] font-normal text-rose-700 pl-6">
+                    💡 Mẹo: Hãy kiểm tra bộ gõ tiếng Việt (Unikey/EVKey) tránh gõ nhầm chữ hoặc bấm nút <strong>Điền nhanh</strong> bên dưới.
+                  </p>
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-800 block text-xs">
-                  Mật khẩu Giáo viên / Quản trị viên:
-                </label>
-                <input
-                  type="password"
-                  value={teacherPasswordInput}
-                  onChange={(e) => setTeacherPasswordInput(e.target.value)}
-                  placeholder="Nhập mật khẩu (Mặc định: DongDuong@2026)"
-                  autoFocus
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none"
-                />
-                <p className="text-[10px] text-slate-500">
-                  * Mật khẩu mặc định hệ thống cho Trường TH Đồng Dương 2 là <code className="bg-slate-100 px-1 py-0.5 rounded font-mono font-bold text-blue-900">DongDuong@2026</code> (hoặc cấu hình qua biến môi trường <code className="font-mono">TEACHER_ADMIN_KEY</code>).
-                </p>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-800 block text-xs">
+                    Mật khẩu Giáo viên / Quản trị viên:
+                  </label>
+                  <span className="text-[11px] text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+                    ℹ️ Không cần tên tài khoản
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type={showTeacherPassword ? "text" : "password"}
+                    value={teacherPasswordInput}
+                    onChange={(e) => setTeacherPasswordInput(e.target.value)}
+                    placeholder="Nhập DongDuong@2026 hoặc admin..."
+                    autoFocus
+                    className="w-full pl-3.5 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-amber-500 focus:bg-white outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowTeacherPassword(!showTeacherPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 rounded-md"
+                    title={showTeacherPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  >
+                    {showTeacherPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Quick autofill helper buttons */}
+                <div className="bg-amber-50/70 border border-amber-200 p-2.5 rounded-xl space-y-1.5">
+                  <div className="text-[11px] font-bold text-amber-950 flex items-center justify-between">
+                    <span>⚡ Bấm để điền nhanh mật khẩu mặc định:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTeacherPasswordInput('DongDuong@2026');
+                        setTeacherAuthError(null);
+                      }}
+                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-lg text-[11px] shadow-xs cursor-pointer transition flex items-center gap-1"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      DongDuong@2026 (Chuẩn)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTeacherPasswordInput('admin');
+                        setTeacherAuthError(null);
+                      }}
+                      className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-800 font-bold rounded-lg text-[11px] border border-slate-300 cursor-pointer transition"
+                    >
+                      admin
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTeacherPasswordInput('giaovien');
+                        setTeacherAuthError(null);
+                      }}
+                      className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-800 font-bold rounded-lg text-[11px] border border-slate-300 cursor-pointer transition"
+                    >
+                      giaovien
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-600">
+                    * Hệ thống đã hỗ trợ các mật khẩu: <code className="font-mono font-bold text-blue-900">DongDuong@2026</code>, <code className="font-mono font-bold text-blue-900">admin</code>, <code className="font-mono font-bold text-blue-900">giaovien</code> (hoặc cấu hình qua biến môi trường <code className="font-mono">TEACHER_ADMIN_KEY</code>).
+                  </p>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">

@@ -17,7 +17,8 @@ import {
   Users,
   Check,
   HelpCircle,
-  FileText
+  FileText,
+  Sparkles
 } from 'lucide-react';
 import { ClassInfo, Student } from '../types/classroom';
 import { studentLoginAuth, fetchWorkstations, WorkstationItem } from '../services/attendanceService';
@@ -219,7 +220,7 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-emerald-200 mt-0.5 font-medium">
-                Tiết học: <strong>Lớp {activeClassObj.name}</strong> • Tiết {periodNumber} ({daySession === 'morning' ? 'Sáng' : 'Chiều'}) • 20 máy trạm
+                Tiết học: <strong>{activeClassObj.name.startsWith('Lớp') ? activeClassObj.name : `Lớp ${activeClassObj.name}`}</strong> • Tiết {periodNumber} ({daySession === 'morning' ? 'Sáng' : 'Chiều'}) • 20 máy trạm
               </p>
             </div>
           </div>
@@ -439,7 +440,7 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
               <div className="flex items-center justify-between">
                 <span className="font-bold flex items-center gap-1.5 text-blue-900">
                   <Clock className="w-4 h-4 text-blue-600" />
-                  <span>Tiết học phòng máy: <strong>Lớp {activeClassObj.name}</strong></span>
+                  <span>Tiết học phòng máy: <strong>{activeClassObj.name.startsWith('Lớp') ? activeClassObj.name : `Lớp ${activeClassObj.name}`}</strong></span>
                 </span>
                 <span className="text-[10px] bg-blue-200 text-blue-800 font-bold px-2 py-0.5 rounded-full">
                   Sĩ số: {activeClassObj.totalStudents} HS
@@ -618,30 +619,38 @@ export const StudentLoginModal: React.FC<StudentLoginModalProps> = ({
 
               {showTeacherLookup && (
                 <div className="mt-2 p-3 bg-amber-50/90 border border-amber-300 rounded-xl text-[10px] text-amber-950 space-y-2">
-                  <span className="font-bold block">Ghi chú hỗ trợ học sinh Lớp {activeClassObj.name}:</span>
+                  <span className="font-bold block">Ghi chú hỗ trợ học sinh:</span>
                   <p>
-                    • Mã học sinh có định dạng: <strong className="font-mono">HS + Mã lớp + Số thứ tự</strong> (Ví dụ Lớp 4/3: <strong className="font-mono">HS43-07</strong> là em Phan Hải Đăng).
+                    • Mã học sinh có định dạng: <strong className="font-mono">HS + Mã lớp + Số thứ tự</strong> (Ví dụ Lớp 4/3: <strong className="font-mono">HS43-07</strong> là em Trần Văn Hà).
                   </p>
                   <p>
-                    • Mật khẩu ban đầu được cấp là: <strong className="font-mono">Mã lớp + Số thứ tự</strong> (Ví dụ em số 07 là <strong className="font-mono">4307</strong>).
-                  </p>
-                  <p className="text-slate-600 italic">
-                    * Nếu học sinh quên mật khẩu hoặc bị khóa, vui lòng liên hệ trực tiếp Cô Huệ để cấp lại.
+                    • Mật khẩu đã cấp trên máy chủ: <strong className="font-mono text-emerald-800 font-bold">456020</strong> hoặc <strong className="font-mono">123456</strong>.
                   </p>
                   {/* Quick test button */}
-                  <div className="pt-1">
+                  <div className="pt-1 flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() => {
-                        if (onSelectClass) onSelectClass('4/3');
+                        if (onSelectClass) onSelectClass('4.3');
                         setStudentCodeInput('HS43-07');
-                        setPasswordInput('4307');
+                        setPasswordInput('456020');
                         setSelectedPcId(7);
                         setErrorMsg(null);
                       }}
-                      className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-[10px] transition cursor-pointer flex items-center gap-1"
+                      className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[10px] transition cursor-pointer flex items-center gap-1 shadow-xs"
                     >
-                      <span>⚡ Tự động điền tài khoản thử nghiệm: HS43-07 (Phan Hải Đăng • PC07)</span>
+                      <Sparkles className="w-3 h-3 text-amber-300" />
+                      <span>⚡ Tự động điền: HS43-07 (Trần Văn Hà • PIN: 456020 • PC07)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPasswordInput('123456');
+                        setErrorMsg(null);
+                      }}
+                      className="px-2 py-1 bg-white hover:bg-slate-100 text-slate-800 font-bold rounded-lg text-[10px] border border-slate-300 transition cursor-pointer"
+                    >
+                      Dùng mã: 123456
                     </button>
                   </div>
                 </div>

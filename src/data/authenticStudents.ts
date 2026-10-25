@@ -1,4 +1,4 @@
-import { Student } from "../types/classroom";
+import type { Student } from "../types/classroom.ts";
 
 // 249 HỌC SINH CHÍNH THỨC CỦA 9 LỚP TRƯỜNG TIỂU HỌC ĐỒNG DƯƠNG
 // Dữ liệu này được lưu vĩnh viễn trong mã nguồn để khi chia sẻ link, tắt app, mở bằng bất kỳ email hay trình duyệt nào vẫn bảo toàn 100%!
