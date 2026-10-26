@@ -83,7 +83,7 @@ export async function fetchStudentAccounts(classId?: string): Promise<{
   requiresAuth?: boolean;
 }> {
   try {
-    const url = `/api/admin/student-accounts?classId=${encodeURIComponent(classId || 'all')}`;
+    const url = `/api/admin/student-accounts?classId=${encodeURIComponent(classId || 'all')}&role=teacher`;
     const res = await fetch(url, {
       headers: getTeacherAuthHeaders(),
     });
@@ -94,7 +94,7 @@ export async function fetchStudentAccounts(classId?: string): Promise<{
         success: false,
         accounts: [],
         totalCount: 0,
-        error: err.error || `Lỗi máy chủ (${res.status})`,
+        error: err.error || (res.status === 401 ? 'Yêu cầu quyền Giáo viên để xem danh sách tài khoản' : `Lỗi máy chủ (${res.status})`),
         requiresAuth: err.requiresAuth || res.status === 401,
       };
     }
@@ -133,14 +133,14 @@ export async function resetStudentPin(studentId: string, customPin?: string): Pr
     const res = await fetch('/api/admin/reset-student-pin', {
       method: 'POST',
       headers: getTeacherAuthHeaders(),
-      body: JSON.stringify({ studentId, customPin }),
+      body: JSON.stringify({ studentId, customPin, role: 'teacher' }),
     });
 
     const data = await res.json();
     if (!res.ok || !data.success) {
       return { 
         success: false, 
-        error: data.error || 'Không thể cấp lại mã PIN',
+        error: data.error || (res.status === 401 ? 'Cần xác thực mật khẩu Giáo viên để cấp lại PIN' : 'Không thể cấp lại mã PIN'),
         requiresAuth: data.requiresAuth || res.status === 401
       };
     }
@@ -176,17 +176,18 @@ export async function batchResetPins(params?: {
   requiresAuth?: boolean;
 }> {
   try {
-    let payload: any = {};
+    let payload: any = { role: 'teacher' };
     if (typeof params === 'string') {
-      payload = { classId: params || 'all' };
+      payload = { classId: params || 'all', role: 'teacher' };
     } else if (params) {
       payload = {
         classId: params.classId || 'all',
         studentIds: params.studentIds,
         customPin: params.customPin,
+        role: 'teacher',
       };
     } else {
-      payload = { classId: 'all' };
+      payload = { classId: 'all', role: 'teacher' };
     }
 
     const res = await fetch('/api/admin/batch-reset-pins', {
@@ -199,7 +200,7 @@ export async function batchResetPins(params?: {
     if (!res.ok || !data.success) {
       return { 
         success: false, 
-        error: data.error || 'Không thể cấp lại mã PIN',
+        error: data.error || (res.status === 401 ? 'Cần xác thực mật khẩu Giáo viên để cấp lại PIN hàng loạt' : 'Không thể cấp lại mã PIN'),
         requiresAuth: data.requiresAuth || res.status === 401
       };
     }

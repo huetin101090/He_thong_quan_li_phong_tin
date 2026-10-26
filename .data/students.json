@@ -82,11 +82,11 @@
     "seatNumber": 7,
     "attendance": "unverified",
     "notes": "Học sinh giỏi tin học",
-    "hashedPin": "$2b$10$zdBEXHRjX4.wr3LEcitRi.nkpcfAAMqPgBNSZR9W8gVxk0Ikb78Lq",
+    "hashedPin": "$2b$10$mDN.io0wxflVLcTRvatZD.R5k5WtMSxsWe9RlbHckD/jjMFUvgsp.",
     "mustChangePinOnFirstLogin": true,
-    "pinUpdatedAt": "2026-10-22T15:55:46.376Z",
-    "pinHash": "$2b$10$zdBEXHRjX4.wr3LEcitRi.nkpcfAAMqPgBNSZR9W8gVxk0Ikb78Lq",
-    "pinResetCount": 2
+    "pinUpdatedAt": "2026-10-26T05:49:58.764Z",
+    "pinHash": "$2b$10$mDN.io0wxflVLcTRvatZD.R5k5WtMSxsWe9RlbHckD/jjMFUvgsp.",
+    "pinResetCount": 3
   },
   {
     "id": "HS43-08",
