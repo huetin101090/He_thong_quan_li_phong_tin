@@ -538,8 +538,12 @@ try {
   console.warn('Filesystem init non-fatal warning:', fsErr);
 }
 
-// Password Hashing with bcrypt (10 rounds) + legacy SHA-256 fallback
+// Password Hashing: High-speed salted SHA-256 for instant serverless startup (<2ms) and bcrypt for single PIN resets
 const AUTH_SALT = 'smart_ict_dong_duong_salt_2026';
+
+function hashPasswordSha256(password: string): string {
+  return crypto.createHash('sha256').update(password.trim() + AUTH_SALT).digest('hex');
+}
 
 function hashPasswordBcrypt(password: string): string {
   return bcrypt.hashSync(password.trim(), 10);
@@ -556,13 +560,13 @@ function verifyPassword(entered: string, storedHash: string): boolean {
       return false;
     }
   }
-  // Hỗ trợ kiểm tra legacy SHA-256 hash cũ nếu có
-  const sha = crypto.createHash('sha256').update(clean + AUTH_SALT).digest('hex');
+  // Hỗ trợ kiểm tra salted SHA-256
+  const sha = hashPasswordSha256(clean);
   return sha === storedHash;
 }
 
 function hashPassword(password: string): string {
-  return hashPasswordBcrypt(password);
+  return hashPasswordSha256(password);
 }
 
 // Workstation interface
@@ -1366,7 +1370,7 @@ app.post('/api/auth/student-change-pin', (req: Request, res: Response) => {
   const defaultFallbackPin = `${safeClass}${seatPad}`;
   const studentExpectedHash = student.hashedPin || hashPassword(defaultFallbackPin);
 
-  if (hashPassword(cleanOldPin) !== studentExpectedHash) {
+  if (!verifyPassword(cleanOldPin, studentExpectedHash)) {
     return res.status(401).json({ success: false, error: 'Mã PIN hiện tại (mã PIN cũ) chưa chính xác!' });
   }
 
