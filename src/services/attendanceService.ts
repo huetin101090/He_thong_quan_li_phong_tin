@@ -1,4 +1,5 @@
 import { AttendanceRecord, AttendanceStatus, ClassAttendanceSummary, Student } from '../types/classroom';
+import { getCachedTempPinForStudent, getCachedTempPins } from './studentAccountService';
 
 const LOCAL_STORAGE_KEY_ATTENDANCE = 'smart_ict_attendance_records_v1';
 
@@ -121,6 +122,8 @@ export async function studentLoginAuth(params: {
 }> {
   const { studentCode, password, pcId, activeClassId, session = 'morning', period = 2 } = params;
   const todayStr = params.date || new Date().toISOString().split('T')[0];
+  const cachedTempPin = getCachedTempPinForStudent(studentCode);
+  const allCachedPins = getCachedTempPins();
 
   try {
     const res = await fetch('/api/auth/student-login', {
@@ -134,6 +137,9 @@ export async function studentLoginAuth(params: {
         date: todayStr,
         session,
         period,
+        tempPin: cachedTempPin,
+        clientTempPin: cachedTempPin,
+        cachedTempPins: allCachedPins,
       }),
     });
 
@@ -209,6 +215,8 @@ export async function studentCheckIn(params: {
   }
 
   const todayStr = params.date || new Date().toISOString().split('T')[0];
+  const cachedTempPin = getCachedTempPinForStudent(studentCode || studentId);
+  const allCachedPins = getCachedTempPins();
 
   try {
     const res = await fetch('/api/attendance/checkin', {
@@ -224,6 +232,9 @@ export async function studentCheckIn(params: {
         date: todayStr,
         session,
         period,
+        tempPin: cachedTempPin,
+        clientTempPin: cachedTempPin,
+        cachedTempPins: allCachedPins,
       }),
     });
 

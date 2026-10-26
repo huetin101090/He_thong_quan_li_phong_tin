@@ -19,6 +19,44 @@ export interface StudentAccountRow {
 }
 
 const TEACHER_TOKEN_STORAGE_KEY = 'smart_ict_teacher_token';
+const TEMP_PINS_STORAGE_KEY = 'smart_ict_temp_pins';
+
+export function getCachedTempPins(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(TEMP_PINS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export function saveCachedTempPin(studentCodeOrId: string, pin: string): void {
+  try {
+    if (!studentCodeOrId || !pin) return;
+    const pins = getCachedTempPins();
+    const clean = String(studentCodeOrId).trim().toUpperCase();
+    const cleanPin = String(pin).trim();
+    pins[clean] = cleanPin;
+    const withHyphen = clean.replace(/^HS(\d{2})(\d{2})$/, 'HS$1-$2');
+    const withoutHyphen = clean.replace(/^HS(\d{2})-(\d{2})$/, 'HS$1$2');
+    pins[withHyphen] = cleanPin;
+    pins[withoutHyphen] = cleanPin;
+    localStorage.setItem(TEMP_PINS_STORAGE_KEY, JSON.stringify(pins));
+  } catch (e) {
+    console.warn('Cannot save temp pin to localStorage:', e);
+  }
+}
+
+export function getCachedTempPinForStudent(studentCode: string): string | undefined {
+  try {
+    if (!studentCode) return undefined;
+    const pins = getCachedTempPins();
+    const clean = String(studentCode).trim().toUpperCase();
+    return pins[clean] || pins[clean.replace(/^HS(\d{2})(\d{2})$/, 'HS$1-$2')] || pins[clean.replace(/^HS(\d{2})-(\d{2})$/, 'HS$1$2')];
+  } catch {
+    return undefined;
+  }
+}
 
 export function getTeacherToken(): string | null {
   try {
@@ -145,6 +183,12 @@ export async function resetStudentPin(studentId: string, customPin?: string): Pr
       };
     }
 
+    if (data.newTempPin) {
+      if (data.studentCode) saveCachedTempPin(data.studentCode, data.newTempPin);
+      if (data.studentId) saveCachedTempPin(data.studentId, data.newTempPin);
+      saveCachedTempPin(studentId, data.newTempPin);
+    }
+
     return data;
   } catch (err: any) {
     return { success: false, error: err?.message || 'Lỗi mạng khi cấp lại mã PIN' };
@@ -205,6 +249,17 @@ export async function batchResetPins(params?: {
       };
     }
 
+    if (data.accountsWithNewPin && Array.isArray(data.accountsWithNewPin)) {
+      data.accountsWithNewPin.forEach((acc: any) => {
+        if (acc.code && acc.newTempPin) {
+          saveCachedTempPin(acc.code, acc.newTempPin);
+        }
+        if (acc.id && acc.newTempPin) {
+          saveCachedTempPin(acc.id, acc.newTempPin);
+        }
+      });
+    }
+
     return data;
   } catch (err: any) {
     return { success: false, error: err?.message || 'Lỗi kết nối khi cấp lại mã PIN' };
@@ -228,6 +283,8 @@ export async function changeStudentPin(studentCode: string, oldPin: string, newP
     if (!res.ok || !data.success) {
       return { success: false, error: data.error || 'Đổi mã PIN không thành công' };
     }
+
+    saveCachedTempPin(studentCode, newPin);
 
     return data;
   } catch (err: any) {
