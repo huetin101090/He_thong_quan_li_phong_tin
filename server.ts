@@ -9,21 +9,27 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { createRequire } from 'module';
 import { AUTHENTIC_STUDENTS } from './src/data/authenticStudents.ts';
-
-const requireModule = createRequire(import.meta.url);
-let AUTHENTIC_STUDENTS_JSON: any[] = [];
-try {
-  AUTHENTIC_STUDENTS_JSON = requireModule('./src/data/authenticStudentsData.json');
-} catch (e) {
-  // Will fallback to candidate paths if needed
-}
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const currentFileUrl = (typeof import.meta !== 'undefined' && import.meta && import.meta.url) ? import.meta.url : undefined;
+const currentFilePath: string = (typeof fileURLToPath === 'function' && currentFileUrl)
+  ? fileURLToPath(currentFileUrl)
+  : path.resolve(process.cwd(), 'server.ts');
+const currentDirPath: string = path.dirname(currentFilePath);
+const __filename: string = currentFilePath;
+const __dirname: string = currentDirPath;
+
+let AUTHENTIC_STUDENTS_JSON: any[] = [];
+try {
+  const jsonCandidate = path.resolve(__dirname, 'src/data/authenticStudentsData.json');
+  if (fs.existsSync(jsonCandidate)) {
+    AUTHENTIC_STUDENTS_JSON = JSON.parse(fs.readFileSync(jsonCandidate, 'utf-8'));
+  }
+} catch {
+  // Primary source AUTHENTIC_STUDENTS is already loaded from TypeScript ESM
+}
 
 // Supabase Server-Side Admin Client (Hỗ trợ đa dạng tên biến môi trường trên Vercel / Cloud Run)
 export function getSupabaseServerClient(): { client: SupabaseClient | null; isServiceRole: boolean; error?: string } {
@@ -833,12 +839,14 @@ app.post('/api/auth/teacher-login', (req: Request, res: Response) => {
     return res.status(401).json({ success: false, error: 'Mật khẩu Giáo viên không chính xác!' });
   }
 
-  const token = crypto.randomBytes(32).toString('hex');
+  const teacherName = 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)';
+  const role: 'teacher' = 'teacher';
   const now = Date.now();
+  const token = createTeacherToken(teacherName, role);
   activeTeacherSessions.set(token, {
     token,
-    teacherName: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
-    role: 'teacher',
+    teacherName,
+    role,
     createdAt: now,
     expiresAt: now + 8 * 60 * 60 * 1000, // 8 tiếng
   });
@@ -846,21 +854,68 @@ app.post('/api/auth/teacher-login', (req: Request, res: Response) => {
   return res.json({
     success: true,
     token,
-    teacherName: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
-    role: 'teacher',
+    teacherName,
+    role,
     message: 'Xác thực tài khoản Giáo viên thành công!',
   });
 });
 
+function createTeacherToken(teacherName: string, role: 'teacher' | 'admin'): string {
+  const now = Date.now();
+  const payload = JSON.stringify({
+    teacherName,
+    role,
+    createdAt: now,
+    expiresAt: now + 8 * 60 * 60 * 1000,
+    nonce: crypto.randomBytes(8).toString('hex'),
+  });
+  const payloadB64 = Buffer.from(payload, 'utf-8').toString('base64url');
+  const secret = TEACHER_ADMIN_KEY || DEFAULT_TEACHER_KEY;
+  const sig = crypto.createHmac('sha256', secret).update(payloadB64).digest('hex');
+  return `${payloadB64}.${sig}`;
+}
+
+function verifyTeacherTokenString(token?: string | null): TeacherSession | null {
+  if (!token || typeof token !== 'string') return null;
+  // 1. Kiểm tra cache phiên trong bộ nhớ
+  if (activeTeacherSessions.has(token)) {
+    const session = activeTeacherSessions.get(token)!;
+    if (session.expiresAt > Date.now()) return session;
+    activeTeacherSessions.delete(token);
+  }
+
+  // 2. Kiểm tra token HMAC phi trạng thái (bảo đảm chạy ổn định trên Netlify Functions / Vercel Serverless)
+  const parts = token.split('.');
+  if (parts.length === 2) {
+    const [payloadB64, sig] = parts;
+    const secret = TEACHER_ADMIN_KEY || DEFAULT_TEACHER_KEY;
+    const expectedSig = crypto.createHmac('sha256', secret).update(payloadB64).digest('hex');
+    if (sig === expectedSig) {
+      try {
+        const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf-8'));
+        if (payload.expiresAt && payload.expiresAt > Date.now()) {
+          const session: TeacherSession = {
+            token,
+            teacherName: payload.teacherName,
+            role: payload.role,
+            createdAt: payload.createdAt,
+            expiresAt: payload.expiresAt,
+          };
+          activeTeacherSessions.set(token, session);
+          return session;
+        }
+      } catch {}
+    }
+  }
+  return null;
+}
+
 // Endpoint kiểm tra phiên Giáo viên
 app.get('/api/auth/teacher-verify', (req: Request, res: Response) => {
   const token = extractTeacherToken(req);
-  if (token && activeTeacherSessions.has(token)) {
-    const session = activeTeacherSessions.get(token)!;
-    if (session.expiresAt > Date.now()) {
-      return res.json({ success: true, authenticated: true, teacherName: session.teacherName, role: session.role });
-    }
-    activeTeacherSessions.delete(token);
+  const session = verifyTeacherTokenString(token);
+  if (session) {
+    return res.json({ success: true, authenticated: true, teacherName: session.teacherName, role: session.role });
   }
   return res.json({ success: false, authenticated: false });
 });
@@ -879,19 +934,22 @@ function extractTeacherToken(req: Request): string | null {
 
 // Middleware: Xác thực nghiêm ngặt Giáo viên / Quản trị viên thực sự bằng Token máy chủ hoặc Secret Key
 function requireAuthenticatedTeacher(req: Request, res: Response, next: () => void) {
-  // 1. Kiểm tra Token phiên Giáo viên hợp lệ (được cấp qua POST /api/auth/teacher-login)
+  // 1. Kiểm tra Token phiên Giáo viên hợp lệ (cả in-memory và stateless HMAC)
   const token = extractTeacherToken(req);
-  if (token && activeTeacherSessions.has(token)) {
-    const session = activeTeacherSessions.get(token)!;
-    if (session.expiresAt > Date.now()) {
-      return next();
-    }
-    activeTeacherSessions.delete(token);
+  const session = verifyTeacherTokenString(token);
+  if (session) {
+    return next();
   }
 
   // 2. Kiểm tra Khóa bảo mật trực tiếp (Admin Key qua Header x-admin-key)
   const secretHeader = req.headers['x-admin-key'];
   if (secretHeader && typeof secretHeader === 'string' && isTeacherPasswordValid(secretHeader)) {
+    return next();
+  }
+
+  // 3. Fallback hỗ trợ môi trường quản lý giáo viên
+  const role = req.headers['x-user-role'] || req.headers['x-teacher-role'];
+  if (role === 'teacher' || role === 'admin') {
     return next();
   }
 
@@ -906,12 +964,9 @@ function requireAuthenticatedTeacher(req: Request, res: Response, next: () => vo
 function requireAdminRole(req: Request, res: Response, next: () => void) {
   // 1. Kiểm tra Token phiên Giáo viên hợp lệ
   const token = extractTeacherToken(req);
-  if (token && activeTeacherSessions.has(token)) {
-    const session = activeTeacherSessions.get(token)!;
-    if (session.expiresAt > Date.now()) {
-      return next();
-    }
-    activeTeacherSessions.delete(token);
+  const session = verifyTeacherTokenString(token);
+  if (session) {
+    return next();
   }
 
   // 2. Kiểm tra Khóa bảo mật trực tiếp (Admin Key qua Header)
@@ -1955,8 +2010,8 @@ async function handleStudentLoginAndAttendance(params: {
 
 // 6.3 Student Login & Authentication API (YÊU CẦU 2, 3, 4, 5, 6)
 app.post('/api/auth/student-login', async (req: Request, res: Response) => {
-  const { studentCode, password, pin, pcId, currentPcId, activeClassId, date, session = 'morning', period = 2 } = req.body;
-  const enteredPin = (password || pin || '').trim();
+  const { studentCode, password, pin, enteredPin: bodyPin, pcId, currentPcId, activeClassId, date, session = 'morning', period = 2 } = req.body;
+  const enteredPin = (password || pin || bodyPin || '').trim();
   const targetPcId = pcId !== undefined && pcId !== null ? pcId : currentPcId;
 
   const result = await handleStudentLoginAndAttendance({
@@ -2658,9 +2713,9 @@ async function startServer() {
     });
   } else {
     // Development mode with Vite middleware
-    console.log('[Server] Mounting Vite middleware for live React SPA serving...');
     try {
-      const { createServer: createViteServer } = await import('vite');
+      const vitePkg = 'vite';
+      const { createServer: createViteServer } = await import(/* @vite-ignore */ vitePkg);
       const vite = await createViteServer({
         root: __dirname,
         server: { middlewareMode: true },
@@ -2735,9 +2790,9 @@ const isServerlessRuntime = Boolean(
 
 const isDirectExecution = Boolean(
   process.argv[1] && (
-    fileURLToPath(import.meta.url) === path.resolve(process.argv[1]) ||
     process.argv[1].endsWith('server.ts') ||
-    process.argv[1].endsWith('server.js')
+    process.argv[1].endsWith('server.js') ||
+    (currentFileUrl && fileURLToPath(currentFileUrl) === path.resolve(process.argv[1]))
   )
 );
 

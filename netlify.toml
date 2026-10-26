@@ -8,9 +8,16 @@
 
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["@google/genai", "bcryptjs"]
+  external_node_modules = ["vite"]
+  included_files = ["src/data/**"]
 
-# 1. Chuyển tiếp toàn bộ API /api/* đến Netlify Function giữ nguyên đường dẫn
+# 1. Chuyển tiếp toàn bộ API /api và /api/* đến Netlify Function giữ nguyên đường dẫn
+[[redirects]]
+  from = "/api"
+  to = "/.netlify/functions/api"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
