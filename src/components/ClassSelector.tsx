@@ -58,7 +58,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-black text-slate-800 uppercase tracking-tight">
-                9 Lớp học theo Khối & Phân môn
+                9 Lớp học Môn Tin học (Khối 3, 4, 5)
               </h2>
               <span className="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 font-bold px-2 py-0.5 rounded-full">
                 249 học sinh • 20 máy
@@ -77,46 +77,16 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({
               type="button"
               onClick={onOpen18FoldersModal}
               className="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs rounded-lg shadow-xs transition cursor-pointer flex items-center gap-1"
-              title="Xem danh mục 18 thư mục lớp học Cô Huệ"
+              title="Xem danh mục thư mục lớp học Môn Tin học"
             >
-              <span>📁 18 Thư mục Cô Huệ</span>
+              <span>📁 Thư mục Lớp Tin học</span>
             </button>
           )}
 
-          {/* Subject Filter */}
-          <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200 text-[11px]">
-            <button
-              onClick={() => handleSubjectChange('all')}
-              className={`px-2.5 py-1 rounded-md font-bold transition cursor-pointer ${
-                activeSubject === 'all'
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Cả 2 môn (Tin & CN)
-            </button>
-            <button
-              onClick={() => handleSubjectChange('tin')}
-              className={`px-2.5 py-1 rounded-md font-bold transition cursor-pointer ${
-                activeSubject === 'tin'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-blue-700'
-              }`}
-            >
-              💻 Tin học (_TIN)
-            </button>
-            <button
-              onClick={() => handleSubjectChange('congnghe')}
-              className={`px-2.5 py-1 rounded-md font-bold transition cursor-pointer ${
-                activeSubject === 'congnghe'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-emerald-700'
-              }`}
-            >
-              🛠️ Công nghệ (_CN)
-            </button>
+          {/* Subject Badge */}
+          <div className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 border border-blue-200 rounded-lg text-[11px] font-bold">
+            💻 Môn Tin học
           </div>
-
           {/* Grade tabs */}
           <div className="inline-flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200 text-[11px]">
             <button
@@ -197,22 +167,13 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({
                 </div>
               </div>
 
-              {/* Exact Subject Folder Tags from User Files */}
+              {/* Tin học Folder Tag */}
               <div className="w-full mt-1.5 space-y-0.5">
-                {(activeSubject === 'all' || activeSubject === 'tin') && (
-                  <span className={`text-[9px] font-bold block truncate rounded px-1 py-0.2 ${
-                    isSelected ? 'bg-blue-800/80 text-blue-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
-                  }`}>
-                    {cls.tinHocFolder}
-                  </span>
-                )}
-                {(activeSubject === 'all' || activeSubject === 'congnghe') && (
-                  <span className={`text-[9px] font-bold block truncate rounded px-1 py-0.2 ${
-                    isSelected ? 'bg-emerald-800/80 text-emerald-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                  }`}>
-                    {cls.congNgheFolder}
-                  </span>
-                )}
+                <span className={`text-[9px] font-bold block truncate rounded px-1 py-0.2 ${
+                  isSelected ? 'bg-blue-800/80 text-blue-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
+                }`}>
+                  {cls.tinHocFolder}
+                </span>
               </div>
             </button>
           );
@@ -241,9 +202,7 @@ export const ClassSelector: React.FC<ClassSelectorProps> = ({
           <span className="font-mono text-[10px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">
             {currentCls.tinHocFolder}
           </span>
-          <span className="font-mono text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
-            {currentCls.congNgheFolder}
-          </span>
+          
         </div>
       </div>
     </div>

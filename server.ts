@@ -166,6 +166,10 @@ function parsePort(): number {
     const p = parseInt(process.argv[portArgIdx + 1], 10);
     if (!isNaN(p)) return p;
   }
+  // In development / AI Studio preview environment, dev server must run on port 3000
+  if (process.env.NODE_ENV !== 'production') {
+    return 3000;
+  }
   if (process.env.PORT) {
     const p = parseInt(process.env.PORT, 10);
     if (!isNaN(p)) return p;
@@ -2839,7 +2843,7 @@ async function startServer() {
       const { createServer: createViteServer } = await import(/* @vite-ignore */ vitePkg);
       const vite = await createViteServer({
         root: __dirname,
-        server: { middlewareMode: true },
+        server: { middlewareMode: true, hmr: false },
         appType: 'spa',
       });
       app.use(vite.middlewares);

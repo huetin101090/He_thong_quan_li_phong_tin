@@ -64,9 +64,9 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-xs font-bold uppercase tracking-wider text-cyan-300 bg-blue-950/80 px-2.5 py-0.5 rounded-full border border-cyan-500/30">
                   {SCHOOL_NAME}
                 </span>
-                <span className="inline-flex items-center gap-1 text-[11px] text-amber-300 bg-amber-950/40 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                  <Sparkles className="w-3 h-3 text-amber-400" />
-                  Môn Tin học & Môn Công nghệ
+                <span className="inline-flex items-center gap-1 text-[11px] text-cyan-300 bg-blue-950/80 border border-cyan-500/40 px-2 py-0.5 rounded-full">
+                  <Sparkles className="w-3 h-3 text-cyan-400" />
+                  Môn Tin học (Khối 3, 4, 5)
                 </span>
               </div>
               <h1 className="text-base sm:text-lg font-extrabold tracking-tight text-white mt-0.5">
@@ -75,46 +75,12 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Prominent Subject Switcher Bar */}
-          {onSelectSubject && (
-            <div className="inline-flex items-center p-1 bg-blue-950/90 rounded-2xl border border-cyan-500/40 shadow-inner self-start lg:self-center">
-              <button
-                type="button"
-                onClick={() => onSelectSubject('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
-                  selectedSubject === 'all'
-                    ? 'bg-white text-blue-950 shadow-md ring-2 ring-cyan-400'
-                    : 'text-blue-200 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                <span>📚 Cả 2 môn (18 lớp)</span>
-              </button>
-              
-              <button
-                type="button"
-                onClick={() => onSelectSubject('tin')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
-                  selectedSubject === 'tin'
-                    ? 'bg-blue-600 text-white shadow-md ring-2 ring-cyan-300'
-                    : 'text-blue-200 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                <span>💻 MÔN TIN HỌC (9 Lớp)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => onSelectSubject('congnghe')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-1.5 ${
-                  selectedSubject === 'congnghe'
-                    ? 'bg-emerald-600 text-white shadow-md ring-2 ring-emerald-300'
-                    : 'text-emerald-200 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                <span>🛠️ MÔN CÔNG NGHỆ (9 Lớp)</span>
-              </button>
-            </div>
-          )}
+          {/* Dedicated Informatics Badge */}
+          <div className="inline-flex items-center px-3.5 py-1.5 bg-blue-950/90 rounded-2xl border border-cyan-500/40 shadow-inner self-start lg:self-center">
+            <span className="text-xs font-black text-cyan-300 flex items-center gap-1.5">
+              <span>💻 MÔN TIN HỌC (9 Lớp • 249 Học sinh • Phòng máy tính)</span>
+            </span>
+          </div>
 
           {/* Right action bar & Database status */}
           <div className="flex flex-wrap items-center gap-2.5">

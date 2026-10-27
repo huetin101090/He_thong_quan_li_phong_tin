@@ -128,7 +128,7 @@ export const PracticeAssignmentManager: React.FC<PracticeAssignmentManagerProps>
   const filteredAssignments = assignments.filter(a => {
     if (gradeFilter !== 'all' && a.grade !== gradeFilter) return false;
     // Exclude any congnghe assignment
-    if (a.subject === 'congnghe') return false;
+    if (a.subject === 'congnghe' || a.title.toLowerCase().includes('công nghệ') || a.objectives?.toLowerCase().includes('công nghệ')) return false;
     if (a.subject && a.subject !== 'tin') return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();

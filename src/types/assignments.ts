@@ -180,7 +180,7 @@ export interface SemesterEvaluation {
   updatedAt: string;
 }
 
-export type UserRole = 'teacher' | 'student';
+export type UserRole = 'teacher' | 'student' | 'guest';
 
 export interface UserSession {
   role: UserRole;
@@ -188,6 +188,7 @@ export interface UserSession {
   studentName?: string;
   classId?: string;
   teacherName?: string;
+  isTeacherAuthenticated?: boolean;
 }
 
 export interface AssignmentDispatchRecord {

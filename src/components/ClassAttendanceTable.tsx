@@ -284,7 +284,7 @@ export const ClassAttendanceTable: React.FC<ClassAttendanceTableProps> = ({
                 </span>
               </div>
               <p className="text-[11px] text-slate-500">
-                Lớp {currentClass.id} • Thư mục: <span className="font-mono text-blue-700 font-bold">{currentClass.tinHocFolder}</span> (Tin) & <span className="font-mono text-emerald-700 font-bold">{currentClass.congNgheFolder}</span> (Công nghệ)
+                Lớp {currentClass.id} • Thư mục bài làm: <span className="font-mono text-blue-700 font-bold">{currentClass.tinHocFolder}</span> (Môn Tin học)
               </p>
             </div>
           </div>

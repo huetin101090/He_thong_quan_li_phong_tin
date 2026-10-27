@@ -35,6 +35,7 @@ interface HeroBannerProps {
   onOpenDiagnostic: () => void;
   onOpenComputers: () => void;
   onOpenStudentLoginModal?: (targetClassId?: string) => void;
+  onOpenTeacherLoginModal?: (defaultAdmin?: boolean) => void;
   periodNumber?: number;
   daySession?: 'morning' | 'afternoon';
 }
@@ -55,6 +56,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
   onOpenDiagnostic,
   onOpenComputers,
   onOpenStudentLoginModal,
+  onOpenTeacherLoginModal,
   periodNumber = 1,
   daySession = 'morning',
 }) => {
@@ -78,7 +80,7 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10.5px] font-bold bg-indigo-700 text-white shadow-xs">
                 <Sparkles className="w-3 h-3 text-yellow-300" />
-                Môn Tin học & Công nghệ AI
+                Môn Tin học • Phòng máy tính AI
               </span>
 
               {onOpen18FoldersModal && (
@@ -206,12 +208,22 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 {/* Login button */}
                 <button
                   type="button"
-                  onClick={() => onSwitchSession({ role: 'teacher', teacherName: 'Cô Nguyễn Thị Huệ (GV Phụ trách Tin học & Công nghệ)' })}
-                  className="px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold rounded-full text-xs border border-slate-300 shadow-xs transition flex items-center gap-1.5 cursor-pointer"
-                  title="Đăng nhập tài khoản Giáo viên Phụ trách Tin học & Công nghệ"
+                  onClick={() => {
+                    if (session.role === 'teacher') {
+                      // Already teacher
+                    } else if (onOpenTeacherLoginModal) {
+                      onOpenTeacherLoginModal(false);
+                    }
+                  }}
+                  className={`px-3.5 py-2 font-semibold rounded-full text-xs border shadow-xs transition flex items-center gap-1.5 cursor-pointer ${
+                    session.role === 'teacher'
+                      ? 'bg-blue-50 text-blue-800 border-blue-300 font-bold'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-300'
+                  }`}
+                  title={session.role === 'teacher' ? 'Đang đăng nhập Giáo viên' : 'Đăng nhập tài khoản Giáo viên Phụ trách Bộ môn Tin học'}
                 >
                   <KeyRound className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Đăng nhập Giáo viên Quản lý</span>
+                  <span>{session.role === 'teacher' ? 'GV: Cô Nguyễn Thị Huệ ✓' : 'Đăng nhập Giáo viên Quản lý'}</span>
                 </button>
               </div>
 
@@ -223,26 +235,38 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({
                 
                 <button
                   type="button"
-                  onClick={() => onSwitchSession({ role: 'teacher', teacherName: 'Quản trị viên (Admin)' })}
+                  onClick={() => {
+                    if (session.role === 'teacher' && session.teacherName?.includes('Admin')) {
+                      // Already admin
+                    } else if (onOpenTeacherLoginModal) {
+                      onOpenTeacherLoginModal(true);
+                    }
+                  }}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
                     session.role === 'teacher' && session.teacherName?.includes('Admin')
                       ? 'bg-amber-100 text-amber-900 border border-amber-300 shadow-xs'
                       : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
                   }`}
-                  title="Chuyển chế độ Quản trị viên hệ thống"
+                  title="Đăng nhập tài khoản Quản trị viên (Admin)"
                 >
                   <span>👑 Admin</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => onSwitchSession({ role: 'teacher', teacherName: 'Cô Nguyễn Thị Huệ' })}
+                  onClick={() => {
+                    if (session.role === 'teacher' && !session.teacherName?.includes('Admin')) {
+                      // Already teacher
+                    } else if (onOpenTeacherLoginModal) {
+                      onOpenTeacherLoginModal(false);
+                    }
+                  }}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer flex items-center gap-1 ${
                     session.role === 'teacher' && !session.teacherName?.includes('Admin')
                       ? 'bg-blue-600 text-white shadow-xs'
                       : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
                   }`}
-                  title="Chuyển chế độ Giáo viên Tin học"
+                  title="Đăng nhập tài khoản Giáo viên Tin học"
                 >
                   <span>GV</span>
                 </button>

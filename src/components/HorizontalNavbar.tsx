@@ -48,6 +48,8 @@ interface HorizontalNavbarProps {
   onSelectSubject?: (subject: 'all' | 'tin' | 'congnghe') => void;
   onOpen18FoldersModal?: () => void;
   onOpenAssignModal?: () => void;
+  isTeacher?: boolean;
+  onRequireTeacherLogin?: (message?: string) => void;
 }
 
 export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
@@ -63,6 +65,8 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
   onSelectSubject,
   onOpen18FoldersModal,
   onOpenAssignModal,
+  isTeacher = false,
+  onRequireTeacherLogin,
 }) => {
   return (
     <nav className="bg-[#1a3a8f] text-white rounded-2xl shadow-lg px-2.5 py-1.5 mb-4 sticky top-2 z-20 border border-blue-600/40">
@@ -127,12 +131,23 @@ export const HorizontalNavbar: React.FC<HorizontalNavbarProps> = ({
           {/* GIAO BÀI TẬP CHO LỚP & HỌC SINH */}
           {onOpenAssignModal && (
             <button
-              onClick={onOpenAssignModal}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition whitespace-nowrap cursor-pointer bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white shadow-md ring-1 ring-emerald-300 transform hover:scale-[1.02]"
-              title="Chọn lớp, chọn bài tập và phân công bài tập cho học sinh"
+              onClick={() => {
+                if (isTeacher) {
+                  onOpenAssignModal();
+                } else if (onRequireTeacherLogin) {
+                  onRequireTeacherLogin('Bạn cần đăng nhập tài khoản Giáo viên để giao bài tập hoặc tạo nhiệm vụ cho học sinh!');
+                }
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-black transition whitespace-nowrap cursor-pointer shadow-md ring-1 transform hover:scale-[1.02] ${
+                isTeacher
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white ring-emerald-300'
+                  : 'bg-slate-800/80 hover:bg-slate-700 text-emerald-300 ring-slate-600'
+              }`}
+              title={isTeacher ? 'Chọn lớp, chọn bài tập và phân công bài tập cho học sinh' : 'Cần đăng nhập Giáo viên để giao bài tập'}
             >
               <Send className="w-3.5 h-3.5 text-amber-200 animate-pulse" />
               <span>GIAO BÀI TẬP</span>
+              {!isTeacher && <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded font-normal">🔒</span>}
             </button>
           )}
 

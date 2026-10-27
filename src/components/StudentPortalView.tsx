@@ -140,10 +140,14 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
     loadDashboard();
   }, [studentCode]);
 
-  // Filter Quizzes strictly for this student's class (or individual targeted students)
+  // Filter Quizzes strictly for this student's class (or individual targeted students) - CHỈ MÔN TIN HỌC
   const availableQuizzes = useMemo(() => {
     const all = getStoredQuizzes();
     return all.filter(q => {
+      // Loại bỏ toàn bộ bài kiểm tra lý thuyết môn Công nghệ
+      if (q.subject === 'congnghe') return false;
+      if (q.title?.toLowerCase().includes('công nghệ') || q.lessonTopic?.toLowerCase().includes('công nghệ')) return false;
+
       if (q.status === 'closed') return false;
       if (q.assignedStudentIds && q.assignedStudentIds.length > 0) {
         return q.assignedStudentIds.includes(studentCode);
@@ -153,10 +157,14 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
     });
   }, [studentClassId, studentCode]);
 
-  // Filter Practice Assignments strictly for this student's class (or individual targeted students)
+  // Filter Practice Assignments strictly for this student's class (or individual targeted students) - CHỈ MÔN TIN HỌC
   const availablePractice = useMemo(() => {
     const all = getStoredPracticeAssignments();
     return all.filter(p => {
+      // Loại bỏ toàn bộ bài thực hành môn Công nghệ
+      if (p.subject === 'congnghe') return false;
+      if (p.title?.toLowerCase().includes('công nghệ') || p.objectives?.toLowerCase().includes('công nghệ')) return false;
+
       if (p.status === 'closed') return false;
       if (p.assignedStudentIds && p.assignedStudentIds.length > 0) {
         return p.assignedStudentIds.includes(studentCode);
@@ -604,7 +612,7 @@ export const StudentPortalView: React.FC<StudentPortalViewProps> = ({
                         <div>
                           <div className="flex items-center justify-between gap-2 mb-1">
                             <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-100 text-indigo-700">
-                              {quiz.subject === 'congnghe' ? 'Công nghệ' : 'Tin học'} • Khối {quiz.grade}
+                              Môn Tin học • Khối {quiz.grade}
                             </span>
                             {isCompleted ? (
                               <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">

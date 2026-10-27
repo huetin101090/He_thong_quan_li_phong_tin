@@ -47,7 +47,7 @@ export const MaterialsSection: React.FC<MaterialsSectionProps> = ({
         item.grade === selectedGrade;
 
       // Filter strictly for Môn Tin học (exclude congnghe)
-      if (item.subject === 'congnghe') return false;
+      if (item.subject === 'congnghe' || item.title.toLowerCase().includes('công nghệ') || item.badge?.toLowerCase().includes('công nghệ') || item.author?.toLowerCase().includes('công nghệ')) return false;
       const matchSubject = !item.subject || item.subject === 'tin' || item.subject === 'both';
 
       return matchSearch && matchCat && matchGrade && matchSubject;

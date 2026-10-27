@@ -129,10 +129,8 @@ export const StudentAccountsManager: React.FC<StudentAccountsManagerProps> = ({
   };
 
   useEffect(() => {
-    if (isTeacher) {
-      loadAccounts(selectedClassId);
-    }
-  }, [isTeacher, selectedClassId]);
+    loadAccounts(selectedClassId);
+  }, [selectedClassId]);
 
   // Keep chosen class in sync with filter if user picks a class
   useEffect(() => {
@@ -411,20 +409,20 @@ export const StudentAccountsManager: React.FC<StudentAccountsManagerProps> = ({
     });
   };
 
-  // ACCESS DENIED VIEW IF STUDENT ROLE (Requirement 6)
-  if (!isTeacher) {
+  // ACCESS DENIED VIEW ONLY IF LOGGED IN AS STUDENT
+  if (session.role === 'student') {
     return (
       <div className="bg-white rounded-3xl p-8 border-2 border-rose-200 shadow-xl max-w-2xl mx-auto my-8 text-center space-y-4 animate-fadeIn">
         <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-3xl mx-auto flex items-center justify-center border border-rose-200 shadow-inner">
           <Lock className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">
-          Quyền truy cập bị giới hạn
+          Cổng Học sinh: Quyền truy cập giới hạn
         </h2>
         <p className="text-sm text-slate-600 leading-relaxed max-w-lg mx-auto">
-          Mục <strong>"Quản lý & Cấp mã PIN Tài khoản Học sinh"</strong> được bảo mật nghiêm ngặt và chỉ dành riêng cho <strong>Giáo viên / Quản trị viên</strong> phòng máy. 
+          Mục <strong>"Quản lý & Cấp mã PIN Tài khoản Học sinh"</strong> chỉ dành riêng cho <strong>Giáo viên</strong>. 
           <br />
-          Học sinh không được phép xem tài khoản hoặc mã PIN của các bạn khác.
+          Học sinh hãy làm bài tại Cổng Học sinh hoặc liên hệ Cô Huệ để được hỗ trợ cấp lại mã PIN cá nhân.
         </p>
         <div className="pt-2">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold">

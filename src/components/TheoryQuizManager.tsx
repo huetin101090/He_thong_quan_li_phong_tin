@@ -129,7 +129,7 @@ export const TheoryQuizManager: React.FC<TheoryQuizManagerProps> = ({
     return quizzes.filter(q => {
       if (gradeFilter !== 'all' && q.grade !== gradeFilter) return false;
       // Exclude any congnghe quiz
-      if (q.subject === 'congnghe') return false;
+      if (q.subject === 'congnghe' || q.title.toLowerCase().includes('công nghệ') || q.lessonTopic?.toLowerCase().includes('công nghệ')) return false;
       if (q.subject && q.subject !== 'tin') return false;
       if (!isTeacher && session.classId) {
         return q.targetClassIds.includes(session.classId);

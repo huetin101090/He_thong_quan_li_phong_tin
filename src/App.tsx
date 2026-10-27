@@ -40,6 +40,7 @@ import {
   reassignDisplacedStudentsFromBrokenComputers,
   fetchStudentsFromServer
 } from './services/storageService';
+import { getTeacherToken, setTeacherToken } from './services/studentAccountService';
 import { fetchStudentsAndClassesFromSupabase } from './services/supabaseDataService';
 import { fetchAttendanceRecords } from './services/attendanceService';
 import { LearningMaterial } from './data/learningMaterials';
@@ -60,6 +61,7 @@ import { StudentLoginModal } from './components/StudentLoginModal';
 import { ClassFoldersModal } from './components/ClassFoldersModal';
 import { StudentPortalView } from './components/StudentPortalView';
 import { AssignExerciseModal } from './components/AssignExerciseModal';
+import { TeacherLoginModal } from './components/TeacherLoginModal';
 
 // New Advanced Modules for Assignment, Grading, Evaluation & AI Feedback
 import { UserRoleBar } from './components/UserRoleBar';
@@ -103,11 +105,25 @@ export default function App() {
   const [students, setStudents] = useState<Student[]>(() => getStoredStudents());
   const [selectedClassId, setSelectedClassId] = useState<string>('5.4'); // Default 5.4
   
-  // User Session: Teacher vs Student Portal
-  const [session, setSession] = useState<UserSession>({
-    role: 'teacher',
-    teacherName: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
+  // User Session: Default to 'guest' (Viewer mode) unless verified teacher token exists
+  const [session, setSession] = useState<UserSession>(() => {
+    const token = getTeacherToken();
+    if (token) {
+      return {
+        role: 'teacher',
+        teacherName: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
+        isTeacherAuthenticated: true,
+      };
+    }
+    return {
+      role: 'guest',
+      teacherName: 'Khách xem học liệu (Chế độ xem)',
+      isTeacherAuthenticated: false,
+    };
   });
+
+  const [isTeacherLoginOpen, setIsTeacherLoginOpen] = useState(false);
+  const [defaultAdminMode, setDefaultAdminMode] = useState(false);
 
   // Global active subject: strictly 'tin' (Môn Tin học)
   const [currentSubject, setCurrentSubject] = useState<'all' | 'tin' | 'congnghe'>('tin');
@@ -687,11 +703,36 @@ export default function App() {
   // Student portal handlers
   const handleStudentLogout = useCallback(() => {
     setSession({
-      role: 'teacher',
-      teacherName: 'Cô Nguyễn Thị Huệ (GV Phụ trách Bộ môn Tin học)',
+      role: 'guest',
+      teacherName: 'Khách xem học liệu (Chế độ xem)',
+      isTeacherAuthenticated: false,
     });
     setLastCheckInStatus(null);
     showToast('Đã đăng xuất khỏi Cổng Học Sinh.', 'info');
+  }, [showToast]);
+
+  const handleOpenTeacherLoginModal = useCallback((defaultAdmin = false) => {
+    setDefaultAdminMode(defaultAdmin);
+    setIsTeacherLoginOpen(true);
+  }, []);
+
+  const handleTeacherLoginSuccess = useCallback((teacherInfo: { name: string; role: 'teacher' }) => {
+    setSession({
+      role: 'teacher',
+      teacherName: teacherInfo.name,
+      isTeacherAuthenticated: true,
+    });
+    showToast(`Đăng nhập thành công! Chào mừng ${teacherInfo.name} vào hệ thống Quản lý.`, 'success');
+  }, [showToast]);
+
+  const handleTeacherLogout = useCallback(() => {
+    setTeacherToken(null);
+    setSession({
+      role: 'guest',
+      teacherName: 'Khách xem học liệu (Chế độ xem)',
+      isTeacherAuthenticated: false,
+    });
+    showToast('Đã đăng xuất khỏi tài khoản Giáo viên. Bạn đang ở Chế độ xem an toàn.', 'info');
   }, [showToast]);
 
   const handleSwitchToTeacher = useCallback(async (adminKey: string) => {
@@ -755,6 +796,8 @@ export default function App() {
           onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
           onOpenStudentLoginModal={() => setIsStudentLoginOpen(true)}
           onOpenStudentAccounts={() => setActiveTab('accounts')}
+          onOpenTeacherLoginModal={() => handleOpenTeacherLoginModal(false)}
+          onLogoutTeacher={handleTeacherLogout}
           currentPcId={currentPcId}
           lastCheckInStatus={lastCheckInStatus}
         />
@@ -785,6 +828,7 @@ export default function App() {
             }
             setIsStudentLoginOpen(true);
           }}
+          onOpenTeacherLoginModal={handleOpenTeacherLoginModal}
           periodNumber={periodNumber}
           daySession={daySession}
         />
@@ -803,6 +847,11 @@ export default function App() {
           onSelectSubject={setCurrentSubject}
           onOpen18FoldersModal={() => setIs18FoldersModalOpen(true)}
           onOpenAssignModal={() => setIsGlobalAssignModalOpen(true)}
+          isTeacher={session.role === 'teacher'}
+          onRequireTeacherLogin={(msg) => {
+            showToast(msg || 'Bạn cần đăng nhập tài khoản Giáo viên để giao bài tập!', 'error');
+            handleOpenTeacherLoginModal(false);
+          }}
         />
 
         {/* 3. TWO-COLUMN MAIN BODY (Left: Menu dọc | Right: Content Grid as drawn in mauweb.jpg) */}
@@ -1293,6 +1342,14 @@ export default function App() {
         onAssignmentSaved={() => {
           showToast('Đã lưu và cập nhật trạng thái phân công bài tập!', 'success');
         }}
+      />
+
+      {/* Teacher Authentication Modal */}
+      <TeacherLoginModal
+        isOpen={isTeacherLoginOpen}
+        onClose={() => setIsTeacherLoginOpen(false)}
+        onSuccess={handleTeacherLoginSuccess}
+        defaultAdmin={defaultAdminMode}
       />
 
       {/* Footer */}

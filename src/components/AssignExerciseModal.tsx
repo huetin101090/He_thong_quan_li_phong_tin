@@ -137,16 +137,17 @@ export const AssignExerciseModal: React.FC<AssignExerciseModalProps> = ({
         setTeacherInstructions(initialPractice.teacherInstructions);
       }
     } else {
-      // Default to first quiz if none selected
-      if (currentQ.length > 0) {
+      // Default to first Tin học quiz if none selected
+      const tinQuizzes = currentQ.filter(q => q.subject !== 'congnghe' && !q.title?.toLowerCase().includes('công nghệ') && !q.lessonTopic?.toLowerCase().includes('công nghệ'));
+      if (tinQuizzes.length > 0) {
         setSelectedExerciseCategory('theory');
-        setSelectedExerciseId(currentQ[0].id);
-        setSelectedClassIds(currentQ[0].targetClassIds.length > 0 ? currentQ[0].targetClassIds : [currentClassId]);
+        setSelectedExerciseId(tinQuizzes[0].id);
+        setSelectedClassIds(tinQuizzes[0].targetClassIds.length > 0 ? tinQuizzes[0].targetClassIds : [currentClassId]);
       }
     }
   }, [isOpen, initialQuiz, initialPractice, currentClassId]);
 
-  // Combined assignment list
+  // Combined assignment list (Chỉ giữ môn Tin học, loại bỏ hoàn toàn môn Công nghệ)
   const allExercises = useMemo(() => {
     const list: Array<{
       id: string;
@@ -163,6 +164,10 @@ export const AssignExerciseModal: React.FC<AssignExerciseModalProps> = ({
     }> = [];
 
     quizzes.forEach(q => {
+      // Loại bỏ toàn bộ bài lý thuyết thuộc môn Công nghệ
+      if (q.subject === 'congnghe') return;
+      if (q.title?.toLowerCase().includes('công nghệ') || q.lessonTopic?.toLowerCase().includes('công nghệ')) return;
+
       list.push({
         id: q.id,
         category: 'theory',
@@ -179,6 +184,10 @@ export const AssignExerciseModal: React.FC<AssignExerciseModalProps> = ({
     });
 
     practiceAssignments.forEach(p => {
+      // Loại bỏ toàn bộ bài thực hành thuộc môn Công nghệ
+      if (p.subject === 'congnghe') return;
+      if (p.title?.toLowerCase().includes('công nghệ') || p.objectives?.toLowerCase().includes('công nghệ')) return;
+
       list.push({
         id: p.id,
         category: 'practice',

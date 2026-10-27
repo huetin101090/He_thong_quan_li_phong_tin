@@ -21,7 +21,7 @@ interface DiscussionForumViewProps {
 interface ForumPost {
   id: string;
   authorName: string;
-  role: 'teacher' | 'student';
+  role: 'teacher' | 'student' | 'guest';
   classId: string;
   title: string;
   content: string;
@@ -31,7 +31,7 @@ interface ForumPost {
   replies: {
     id: string;
     authorName: string;
-    role: 'teacher' | 'student';
+    role: 'teacher' | 'student' | 'guest';
     content: string;
     date: string;
   }[];

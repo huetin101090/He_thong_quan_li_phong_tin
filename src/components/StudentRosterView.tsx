@@ -1035,7 +1035,7 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
                 <span className="bg-emerald-600 text-white px-2 py-0.5 rounded font-black">Tự ghép thành Họ và tên đầy đủ</span>
               </div>
               <div className="text-[10.5px] text-slate-500 flex flex-wrap items-center justify-center gap-2 mt-0.5">
-                <span>✓ Đọc tất cả các sheet (Tin học & Công nghệ)</span>
+                <span>✓ Đọc các sheet danh sách Môn Tin học</span>
                 <span>•</span>
                 <span>✓ Tự nhận diện lớp</span>
                 <span>•</span>
@@ -1047,27 +1047,18 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
               {/* 18 Configured Folders Display */}
               <div className="mt-2 pt-2 border-t border-emerald-200/60 text-[10.5px] text-emerald-900 flex flex-col items-center gap-1 w-full">
                 <span className="font-bold text-emerald-950 flex items-center gap-1">
-                  <span>📁 Tự động khớp 18 thư mục/tệp Tin học & Công nghệ của Cô Huệ:</span>
+                  <span>📁 Tự động khớp 9 thư mục/tệp Môn Tin học của Cô Huệ:</span>
                 </span>
                 <div className="flex flex-wrap items-center justify-center gap-1 font-mono text-[9px] max-w-4xl">
                   <span className="bg-white border border-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-semibold shadow-2xs">_TIN HỌC 3.4</span>
-                  <span className="bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-800 font-semibold shadow-2xs">_CÔNG NGHỆ 3.4</span>
                   <span className="bg-white border border-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-semibold shadow-2xs">_TIN HỌC 3.5</span>
-                  <span className="bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-800 font-semibold shadow-2xs">_CÔNG NGHỆ 3.5</span>
                   <span className="bg-white border border-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-semibold shadow-2xs">_TIN HỌC 3.6</span>
-                  <span className="bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-800 font-semibold shadow-2xs">_CÔNG NGHỆ 3.6</span>
                   <span className="bg-white border border-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-semibold shadow-2xs">_TIN 4.3</span>
-                  <span className="bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-800 font-semibold shadow-2xs">_CN4.3</span>
                   <span className="bg-white border border-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-semibold shadow-2xs">_TIN 4.4</span>
-                  <span className="bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-800 font-semibold shadow-2xs">_CN4.4</span>
-                  <span className="bg-white border border-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-semibold shadow-2xs">_TIN 4.5.</span>
-                  <span className="bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-800 font-semibold shadow-2xs">_CN 4.5</span>
-                  <span className="bg-white border border-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-semibold shadow-2xs">_TIN5.4</span>
-                  <span className="bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-800 font-semibold shadow-2xs">_CN 5.4</span>
+                  <span className="bg-white border border-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-semibold shadow-2xs">_TIN 4.5</span>
+                  <span className="bg-white border border-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-semibold shadow-2xs">_TIN 5.4</span>
                   <span className="bg-white border border-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-semibold shadow-2xs">_TIN 5.5</span>
-                  <span className="bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-800 font-semibold shadow-2xs">_CN 5.5</span>
                   <span className="bg-white border border-blue-200 px-1.5 py-0.5 rounded text-blue-800 font-semibold shadow-2xs">_TIN 5.6</span>
-                  <span className="bg-white border border-emerald-200 px-1.5 py-0.5 rounded text-emerald-800 font-semibold shadow-2xs">_CN 5.6</span>
                 </div>
               </div>
             </div>
@@ -1235,7 +1226,7 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
                 <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                 Khối 3 ({students.filter(s => classes.find(c => isSameClass(c.id, s.classId))?.grade === 3).length} HS)
               </span>
-              <span className="text-[10px] text-slate-500">3 lớp • 6 thư mục</span>
+              <span className="text-[10px] text-slate-500">3 lớp Tin học</span>
             </div>
             <div className="grid grid-cols-3 gap-1.5">
               {classes.filter(c => c.grade === 3).map(c => {
@@ -1282,7 +1273,7 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
                 <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
                 Khối 4 ({students.filter(s => classes.find(c => isSameClass(c.id, s.classId))?.grade === 4).length} HS)
               </span>
-              <span className="text-[10px] text-slate-500">3 lớp • 6 thư mục</span>
+              <span className="text-[10px] text-slate-500">3 lớp Tin học</span>
             </div>
             <div className="grid grid-cols-3 gap-1.5">
               {classes.filter(c => c.grade === 4).map(c => {
@@ -1329,7 +1320,7 @@ export const StudentRosterView: React.FC<StudentRosterViewProps> = ({
                 <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                 Khối 5 ({students.filter(s => classes.find(c => isSameClass(c.id, s.classId))?.grade === 5).length} HS)
               </span>
-              <span className="text-[10px] text-slate-500">3 lớp • 6 thư mục</span>
+              <span className="text-[10px] text-slate-500">3 lớp Tin học</span>
             </div>
             <div className="grid grid-cols-3 gap-1.5">
               {classes.filter(c => c.grade === 5).map(c => {
